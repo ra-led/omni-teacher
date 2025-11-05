@@ -6,3 +6,7 @@ psycopg2-binary==2.9.9
 minio==7.2.5
 python-multipart==0.0.9
 pydantic==2.6.3
+pydantic-settings==2.2.1
+SQLAlchemy==2.0.25
+openai==1.14.3
+python-slugify==8.0.4

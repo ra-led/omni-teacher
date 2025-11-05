@@ -28,6 +28,7 @@ services:
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
       - ./backend:/app
     ports:
@@ -49,6 +50,7 @@ services:
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
       - ./backend:/app
     depends_on:
