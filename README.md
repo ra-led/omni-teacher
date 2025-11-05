@@ -3,7 +3,7 @@
 A conceptual platform for a kid-friendly AI teacher that combines large language and vision-language models to deliver adaptive, multimodal learning experiences. The system emphasizes persistent progress tracking, dynamic lesson planning, and playful conversation while supporting text, image, and voice interactions.
 
 ## Highlights
-- **Adaptive learning programs**: Generates topic-specific curricula after diagnosing student proficiency via AI-generated quizzes.
+- **Adaptive learning programs**: Lets students add new topics on demand, then generates topic-specific curricula after diagnosing proficiency via AI-generated quizzes.
 - **Persistent progress**: Stores lessons, quiz results, reflections, and badges in PostgreSQL with Redis caching.
 - **Multimodal chat**: Supports Markdown, LaTeX, Mermaid diagrams, photo uploads, and voice (STT/TTS) within a single chat stream.
 - **Omni model integration**: All student inputs are routed through `gpt-4o` for text+vision reasoning, small-talk handling, and guardrails.

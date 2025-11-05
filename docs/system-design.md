@@ -72,7 +72,7 @@ diagram TD
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | `users` | Accounts for students, guardians, teachers | `id`, `role`, `profile`, `preferences` |
-| `learning_programs` | Templates for topics | `id`, `title`, `subject`, `age_range`, `description`, `thumbnail_url` |
+| `learning_programs` | Templates generated per learner-requested topic | `id`, `title`, `subject`, `age_range`, `description`, `thumbnail_url` |
 | `program_versions` | Versioned program structures generated per learner | `id`, `program_id`, `student_id`, `skill_profile`, `generated_at`, `structure_json` |
 | `lessons` | Content nodes in generated program | `id`, `program_version_id`, `chapter`, `order`, `content_markdown`, `resources` |
 | `lesson_attempts` | Student attempts with feedback | `id`, `lesson_id`, `student_id`, `status`, `score`, `answers_json`, `reflection_positive`, `reflection_negative`, `created_at` |
@@ -84,12 +84,12 @@ diagram TD
 
 ## Key User Flows
 ### 1. Topic Selection & Diagnostic Quiz
-1. Student chooses topic from catalog.
-2. Backend generates initial diagnostic quiz via `QuizGen` using gpt-4o.
+1. Student selects **Add Topic** from the catalog and describes the subject they want to learn.
+2. Backend generates an initial diagnostic quiz via `QuizGen` using gpt-4o tailored to the requested topic.
 3. Student completes quiz (text/voice/image answers). STT converts voice to text; images analyzed via Vision worker and gpt-4o.
 4. Quiz evaluation determines proficiency level and identifies gaps.
-5. Program generator creates personalized program structure (chapters, lessons, recommended modalities).
-6. Program stored in `program_versions` and shown in UI.
+5. Program generator creates a personalized program structure (chapters, lessons, recommended modalities) for that topic.
+6. Program stored in `program_versions` and surfaced in the catalog for the student.
 
 ### 2. Lesson Delivery & Reflection
 1. Student enters lesson chat. Backend fetches relevant lesson content and history.
@@ -123,7 +123,7 @@ diagram TD
 ## Accessibility & Child Safety
 - COPPA/GDPR compliance with parental consent and data minimization.
 - Friendly avatars, colorblind-safe palette, and adjustable font sizes.
-- Content filtering via `Omni` classification and human review queue for flagged interactions.
+- Optional content filtering via `Omni` classification with an opt-in human review queue for flagged interactions.
 
 ## Deployment & DevOps
 - **Containerization**: Each service has dedicated Dockerfile. Multi-stage builds for optimized images.
