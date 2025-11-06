@@ -1,0 +1,112 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: "npm run dev"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: omni
+      MINIO_SECRET_KEY: omni_secret
+      OMNI_MODEL: gpt-4o
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com/v1}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: "celery -A app.worker.celery_app worker --loglevel=INFO"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: omni
+      MINIO_SECRET_KEY: omni_secret
+      OMNI_MODEL: gpt-4o
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com/v1}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - backend
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: omni
+      POSTGRES_USER: omni
+      POSTGRES_PASSWORD: omni
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:RELEASE.2024-02-26T09-33-48Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: omni
+      MINIO_ROOT_PASSWORD: omni_secret
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  studio:
+    build:
+      context: ./studio
+      dockerfile: Dockerfile
+    command: "npm run dev"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    volumes:
+      - ./studio:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
