@@ -89,7 +89,7 @@ class LearningProgramResponse(BaseModel):
     topic_prompt: str
     status: ProgramStatus
     skill_profile: str | None = None
-    metadata: dict[str, Any] | None = None
+    context: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime
     quiz: DiagnosticQuizResponse | None = None
@@ -174,7 +174,7 @@ class ChatMessageOut(BaseModel):
     render_formats: list[str] = Field(default_factory=list)
     audio_url: str | None = None
     image_url: str | None = None
-    metadata: dict[str, Any] | None = None
+    annotations: dict[str, Any] | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}

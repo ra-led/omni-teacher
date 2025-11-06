@@ -79,7 +79,7 @@ diagram TD
 | `quizzes` | Diagnostic and formative assessments | `id`, `program_version_id`, `type`, `items_json`, `target_skill` |
 | `quiz_attempts` | Captured answers | `id`, `quiz_id`, `student_id`, `attempt_number`, `responses_json`, `score`, `analysis_json` |
 | `chat_sessions` | Each interaction thread | `id`, `student_id`, `program_version_id`, `context` |
-| `messages` | Individual chat messages | `id`, `session_id`, `sender`, `content_type`, `content_payload`, `render_formats`, `audio_url`, `image_url`, `metadata` |
+| `messages` | Individual chat messages | `id`, `session_id`, `sender`, `content_type`, `content_payload`, `render_formats`, `audio_url`, `image_url`, `annotations` |
 | `badges` | Gamified achievements | `id`, `student_id`, `type`, `awarded_at`, `description` |
 
 ## Key User Flows

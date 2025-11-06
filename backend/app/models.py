@@ -66,7 +66,7 @@ class LearningProgram(TimestampMixin, Base):
     summary = Column(Text, nullable=True)
     status = Column(Enum(ProgramStatus), default=ProgramStatus.GENERATING_QUIZ, nullable=False)
     skill_profile = Column(Text, nullable=True)
-    metadata = Column(JSON, default=dict)
+    context = Column(JSON, default=dict)
 
     student = relationship("Student", back_populates="programs")
     quiz = relationship("DiagnosticQuiz", back_populates="program", uselist=False, cascade="all, delete-orphan")
@@ -166,6 +166,6 @@ class ChatMessage(TimestampMixin, Base):
     render_formats = Column(JSON, default=list)
     audio_url = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
-    metadata = Column(JSON, default=dict)
+    annotations = Column(JSON, default=dict)
 
     session = relationship("ChatSession", back_populates="messages")

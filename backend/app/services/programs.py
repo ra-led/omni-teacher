@@ -78,7 +78,7 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
         title=f"{title_seed or 'New'} Learning Adventure",
         summary=None,
         status=ProgramStatus.GENERATING_QUIZ,
-        metadata={
+        context={
             "learning_goal": payload.learning_goal,
             "student_traits": payload.student_traits or [],
         },
@@ -96,9 +96,9 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
     program.title = quiz_payload.get("program_title", program.title)
     program.summary = quiz_payload.get("overview")
     program.status = ProgramStatus.AWAITING_DIAGNOSTIC
-    metadata = program.metadata or {}
-    metadata["diagnostic_notes"] = quiz_payload.get("instructions")
-    program.metadata = metadata
+    context = program.context or {}
+    context["diagnostic_notes"] = quiz_payload.get("instructions")
+    program.context = context
 
     questions = quiz_payload.get("questions") or []
     for index, question in enumerate(questions, start=1):
@@ -151,10 +151,10 @@ def submit_diagnostic(
     program.skill_profile = evaluation.get("skill_profile")
     program.summary = evaluation.get("program_overview", program.summary)
     program.status = ProgramStatus.READY
-    metadata = program.metadata or {}
-    metadata["analysis"] = evaluation.get("analysis")
-    metadata["chapters"] = evaluation.get("chapters", [])
-    program.metadata = metadata
+    context = program.context or {}
+    context["analysis"] = evaluation.get("analysis")
+    context["chapters"] = evaluation.get("chapters", [])
+    program.context = context
 
     db.query(Lesson).filter(Lesson.program_id == program.id).delete(synchronize_session=False)
     order_index = 1
