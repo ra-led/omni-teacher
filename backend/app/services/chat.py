@@ -8,7 +8,7 @@ from typing import Iterable
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..core.openai_client import get_omni_client
+from ..core.openai_client import OmniAPIError, get_omni_client
 from ..core.storage import storage_client
 from ..models import ChatMessage, ChatSession, LearningProgram, Student
 from ..schemas import ChatMessageIn
@@ -111,7 +111,13 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     trimmed_history = history[-settings.max_chat_history :]
     conversation = _build_conversation(session, trimmed_history)
     client = get_omni_client()
-    reply_text = client.chat_reply(conversation)
+    try:
+        reply_text = client.chat_reply(conversation)
+    except OmniAPIError:
+        reply_text = (
+            "I'm having a little trouble reaching my brainy assistant right now. "
+            "Let's keep talking, and I'll fetch more help soon!"
+        )
 
     assistant_message = ChatMessage(
         session_id=session.id,
@@ -126,11 +132,15 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
 
     should_voice = session.tts_enabled or voice_requested
     if should_voice and reply_text:
-        audio_bytes = client.synthesize_speech(reply_text)
-        object_name = f"sessions/{session.id}/{uuid.uuid4()}.mp3"
-        audio_url = storage_client.store_audio(object_name=object_name, audio_bytes=audio_bytes)
-        assistant_message.audio_url = audio_url
-        db.commit()
-        db.refresh(assistant_message)
+        try:
+            audio_bytes = client.synthesize_speech(reply_text)
+        except OmniAPIError:
+            audio_bytes = None
+        if audio_bytes:
+            object_name = f"sessions/{session.id}/{uuid.uuid4()}.mp3"
+            audio_url = storage_client.store_audio(object_name=object_name, audio_bytes=audio_bytes)
+            assistant_message.audio_url = audio_url
+            db.commit()
+            db.refresh(assistant_message)
 
     return assistant_message

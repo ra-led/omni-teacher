@@ -4,9 +4,7 @@ import React from 'react';
 
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 
-const DEFAULT_BROWSER_API_BASE = 'http://localhost:8000';
 const DEFAULT_SERVER_API_BASE = 'http://backend:8000';
-const DEFAULT_BROWSER_WS_BASE = 'ws://localhost:8000';
 
 const resolveApiBase = () => {
   if (typeof window === 'undefined') {
@@ -16,7 +14,12 @@ const resolveApiBase = () => {
       DEFAULT_SERVER_API_BASE
     );
   }
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_BROWSER_API_BASE;
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  const { protocol, hostname } = window.location;
+  const port = process.env.NEXT_PUBLIC_API_PORT ?? '8000';
+  return `${protocol}//${hostname}:${port}`;
 };
 
 const resolveWebsocketBase = () => {
@@ -24,10 +27,16 @@ const resolveWebsocketBase = () => {
     return (
       process.env.NEXT_PUBLIC_WS_BASE_URL ??
       process.env.WS_BASE_URL ??
-      DEFAULT_BROWSER_WS_BASE
+      resolveApiBase().replace('http', 'ws')
     );
   }
-  return process.env.NEXT_PUBLIC_WS_BASE_URL ?? DEFAULT_BROWSER_WS_BASE;
+  if (process.env.NEXT_PUBLIC_WS_BASE_URL) {
+    return process.env.NEXT_PUBLIC_WS_BASE_URL;
+  }
+  const { protocol, hostname } = window.location;
+  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+  const port = process.env.NEXT_PUBLIC_WS_PORT ?? process.env.NEXT_PUBLIC_API_PORT ?? '8000';
+  return `${wsProtocol}//${hostname}:${port}`;
 };
 
 const API_BASE = resolveApiBase();
@@ -146,7 +155,13 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!response.ok) {
-    const message = await response.text();
+    let message: string | undefined;
+    try {
+      const data = await response.json();
+      message = typeof data.detail === 'string' ? data.detail : JSON.stringify(data);
+    } catch (error) {
+      message = await response.text();
+    }
     throw new Error(message || `Request failed with ${response.status}`);
   }
   if (response.status === 204) {
@@ -404,6 +419,7 @@ export default function HomePage() {
           <label>
             Learner name
             <input
+              name="learner-name"
               required
               value={studentForm.display_name}
               onChange={(event) =>
@@ -415,6 +431,7 @@ export default function HomePage() {
           <label>
             Age
             <input
+              name="learner-age"
               type="number"
               min={5}
               max={16}
@@ -428,6 +445,7 @@ export default function HomePage() {
           <label>
             Grade
             <input
+              name="learner-grade"
               value={studentForm.grade}
               onChange={(event) =>
                 setStudentForm((prev) => ({ ...prev, grade: event.target.value }))
@@ -455,6 +473,7 @@ export default function HomePage() {
             <label>
               Topic idea from learner
               <input
+                name="topic"
                 required
                 value={topicForm.topic}
                 onChange={(event) => setTopicForm((prev) => ({ ...prev, topic: event.target.value }))}
@@ -464,6 +483,7 @@ export default function HomePage() {
             <label>
               Learning goal (optional)
               <input
+                name="learning-goal"
                 value={topicForm.learning_goal}
                 onChange={(event) =>
                   setTopicForm((prev) => ({ ...prev, learning_goal: event.target.value }))
@@ -474,6 +494,7 @@ export default function HomePage() {
             <label>
               Learner traits (comma separated)
               <input
+                name="learner-traits"
                 value={topicForm.traits}
                 onChange={(event) => setTopicForm((prev) => ({ ...prev, traits: event.target.value }))}
                 placeholder="visual, loves drawing, curious"
@@ -645,11 +666,13 @@ export default function HomePage() {
           <form className="chat-input" onSubmit={handleSendChat} style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <textarea
+                name="chat-message"
                 placeholder="Ask a question, share how the lesson felt..."
                 value={chatInput.text}
                 onChange={(event) => setChatInput((prev) => ({ ...prev, text: event.target.value }))}
               />
               <input
+                name="chat-image-url"
                 type="url"
                 placeholder="Optional image URL"
                 value={chatInput.image_url}
@@ -658,6 +681,7 @@ export default function HomePage() {
               <div className="chat-controls">
                 <label>
                   <input
+                    name="chat-voice"
                     type="checkbox"
                     checked={chatInput.generate_voice}
                     onChange={(event) =>

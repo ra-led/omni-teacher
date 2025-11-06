@@ -38,7 +38,8 @@ Read the detailed architecture in [docs/system-design.md](docs/system-design.md)
 2. Populate any required secrets in a `.env` file (see `docker-compose.yml` for environment variables). At minimum set
    `OPENAI_API_KEY` and, if you use a custom endpoint, `OPENAI_API_BASE` (defaults to `https://api.openai.com/v1`). The
    frontend expects `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_WS_BASE_URL` to resolve from the browser – the compose
-   file defaults both to `localhost` so requests escape the container network correctly.
+   file defaults both to `localhost` so requests escape the container network correctly. If you prefer a tighter
+   browser allow-list, adjust `CORS_ORIGINS` (comma separated) to match the hostnames you use during development.
 3. Start the stack:
    ```bash
    docker compose up --build

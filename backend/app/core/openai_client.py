@@ -10,6 +10,14 @@ import httpx
 from .config import settings
 
 
+class OmniAPIError(RuntimeError):
+    """Raised when the Omni API cannot fulfill a request."""
+
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 class OmniClient:
     """Wrapper around OpenAI's HTTP APIs tailored for Omni Teacher flows."""
 
@@ -142,17 +150,23 @@ class OmniClient:
     def synthesize_speech(self, text: str) -> bytes:
         """Convert assistant text into an audio payload."""
 
-        response = self._http.post(
-            "/audio/speech",
-            json={
-                "model": "gpt-4o-mini-tts",
-                "voice": self._voice,
-                "input": text,
-                "format": "mp3",
-            },
-            headers={"Accept": "audio/mpeg"},
-        )
-        response.raise_for_status()
+        try:
+            response = self._http.post(
+                "/audio/speech",
+                json={
+                    "model": "gpt-4o-mini-tts",
+                    "voice": self._voice,
+                    "input": text,
+                    "format": "mp3",
+                },
+                headers={"Accept": "audio/mpeg"},
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code if exc.response else None
+            raise OmniAPIError("Unable to synthesise speech", status_code=status_code) from exc
+        except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+            raise OmniAPIError("Network error while synthesising speech") from exc
         return response.content
 
     def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
@@ -163,8 +177,20 @@ class OmniClient:
         }
         if response_format:
             payload["response_format"] = response_format
-        response = self._http.post("/chat/completions", json=payload)
-        response.raise_for_status()
+        try:
+            response = self._http.post("/chat/completions", json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code if exc.response else None
+            detail = exc.response.text if exc.response else ""
+            message = "Omni API returned an error"
+            if status_code:
+                message = f"Omni API returned {status_code}"
+            if detail:
+                message = f"{message}: {detail}"
+            raise OmniAPIError(message, status_code=status_code) from exc
+        except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+            raise OmniAPIError("Network error while calling Omni API") from exc
         data = response.json()
         choices = data.get("choices") or []
         if not choices:
@@ -190,4 +216,4 @@ def get_omni_client() -> OmniClient:
     return _singleton
 
 
-__all__ = ["OmniClient", "get_omni_client"]
+__all__ = ["OmniClient", "OmniAPIError", "get_omni_client"]

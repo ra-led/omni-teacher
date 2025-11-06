@@ -8,7 +8,7 @@ from slugify import slugify
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..core.openai_client import get_omni_client
+from ..core.openai_client import OmniAPIError, get_omni_client
 from ..models import (
     ChatSession,
     DiagnosticQuiz,
@@ -88,10 +88,22 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
     db.refresh(program)
 
     client = get_omni_client()
-    quiz_payload = client.generate_diagnostic_quiz(
-        topic=payload.topic,
-        student_profile=_student_profile(student, payload),
-    )
+    try:
+        quiz_payload = client.generate_diagnostic_quiz(
+            topic=payload.topic,
+            student_profile=_student_profile(student, payload),
+        )
+    except OmniAPIError as exc:
+        context = program.context or {}
+        context["generation_error"] = {
+            "message": str(exc),
+            "status_code": exc.status_code,
+            "stage": "diagnostic_quiz",
+        }
+        program.context = context
+        db.commit()
+        db.refresh(program)
+        raise RuntimeError("Failed to generate diagnostic quiz from Omni API") from exc
 
     program.title = quiz_payload.get("program_title", program.title)
     program.summary = quiz_payload.get("overview")
@@ -139,12 +151,25 @@ def submit_diagnostic(
     db.refresh(attempt)
 
     client = get_omni_client()
-    evaluation = client.evaluate_quiz_answers(
-        topic=program.topic_prompt,
-        quiz={"questions": program.quiz.questions},
-        answers=submission.answers,
-        student_profile=_student_profile(program.student),
-    )
+    try:
+        evaluation = client.evaluate_quiz_answers(
+            topic=program.topic_prompt,
+            quiz={"questions": program.quiz.questions},
+            answers=submission.answers,
+            student_profile=_student_profile(program.student),
+        )
+    except OmniAPIError as exc:
+        program.status = ProgramStatus.AWAITING_DIAGNOSTIC
+        context = program.context or {}
+        context["generation_error"] = {
+            "message": str(exc),
+            "status_code": exc.status_code,
+            "stage": "program_evaluation",
+        }
+        program.context = context
+        db.commit()
+        db.refresh(program)
+        raise RuntimeError("Failed to evaluate diagnostic attempt with Omni API") from exc
 
     attempt.score = evaluation.get("score")
     attempt.analysis = evaluation.get("analysis")
@@ -199,11 +224,18 @@ def complete_lesson(
     )
 
     client = get_omni_client()
-    reflection = client.summarise_lesson_attempt(
-        lesson_title=lesson.title,
-        lesson_content=lesson.content_markdown,
-        answers=payload.answers,
-    )
+    try:
+        reflection = client.summarise_lesson_attempt(
+            lesson_title=lesson.title,
+            lesson_content=lesson.content_markdown,
+            answers=payload.answers,
+        )
+    except OmniAPIError as exc:
+        reflection = {
+            "positive_feedback": "Great effort on the activity!",
+            "next_focus": "Let's review the key ideas together next time.",
+            "error": str(exc),
+        }
     attempt.reflection_positive = reflection.get("positive_feedback")
     attempt.reflection_negative = reflection.get("next_focus")
 

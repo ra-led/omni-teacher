@@ -46,8 +46,8 @@ app = FastAPI(title="Omni Teacher API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -89,6 +89,8 @@ def add_topic(student_id: str, payload: TopicCreate, db: Session = Depends(get_d
         program = programs_service.create_topic_program(db, student_id=student_id, payload=payload)
     except ValueError as exc:  # missing student
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     refreshed = programs_service.get_program(db, program.id)
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program creation failed")
@@ -119,6 +121,8 @@ def submit_diagnostic(program_id: str, submission: DiagnosticSubmission, db: Ses
         message = str(exc)
         status_code = status.HTTP_404_NOT_FOUND if "not found" in message.lower() else status.HTTP_400_BAD_REQUEST
         raise HTTPException(status_code=status_code, detail=message) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     refreshed = programs_service.get_program(db, program.id)
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program evaluation failed")
