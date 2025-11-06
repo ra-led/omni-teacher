@@ -30,6 +30,83 @@ from ..schemas import (
 )
 
 
+_ALLOWED_QUIZ_TYPES = {"free_form", "multiple_choice", "multi_select"}
+_QUIZ_TYPE_ALIASES = {
+    "short_answer": "free_form",
+    "text": "free_form",
+    "open_ended": "free_form",
+    "single_choice": "multiple_choice",
+    "single-select": "multiple_choice",
+    "multi_select": "multi_select",
+    "multiple_choice": "multiple_choice",
+}
+
+
+def _normalise_quiz_question(question_data: dict[str, Any], index: int) -> dict[str, Any]:
+    """Ensure quiz questions adhere to the response schema expectations."""
+
+    question: dict[str, Any] = dict(question_data)
+
+    # Provide deterministic identifiers for questions and cast to string.
+    question_id = question.get("id") or f"q{index}"
+    question["id"] = str(question_id)
+
+    # Normalise prompts that may arrive under different keys.
+    prompt = (
+        question.get("prompt")
+        or question.get("question")
+        or question.get("text")
+        or ""
+    )
+    question["prompt"] = str(prompt)
+
+    raw_answer_type = str(question.get("answer_type") or "").lower().strip()
+    answer_type = _QUIZ_TYPE_ALIASES.get(raw_answer_type, raw_answer_type)
+    if answer_type not in _ALLOWED_QUIZ_TYPES:
+        answer_type = "free_form"
+    question["answer_type"] = answer_type
+
+    # Some Omni payloads return options as objects with labels. Flatten to strings.
+    raw_choices = question.get("choices") or question.get("options")
+    if raw_choices is None:
+        question.pop("choices", None)
+    else:
+        normalised_choices: list[str] = []
+        if isinstance(raw_choices, list):
+            for choice in raw_choices:
+                if isinstance(choice, dict):
+                    label = (
+                        choice.get("label")
+                        or choice.get("text")
+                        or choice.get("value")
+                        or choice.get("option")
+                    )
+                    normalised_choices.append(str(label) if label is not None else str(choice))
+                else:
+                    normalised_choices.append(str(choice))
+        else:
+            normalised_choices.append(str(raw_choices))
+
+        if normalised_choices:
+            question["choices"] = normalised_choices
+        else:
+            question.pop("choices", None)
+
+    # Coerce hints to a list of strings when provided.
+    raw_hints = question.get("hints")
+    if raw_hints is None:
+        question.pop("hints", None)
+    else:
+        hints: list[str] = []
+        if isinstance(raw_hints, list):
+            hints = [str(item) for item in raw_hints]
+        else:
+            hints = [str(raw_hints)]
+        question["hints"] = hints
+
+    return question
+
+
 def _student_profile(student: Student, topic: TopicCreate | None = None) -> dict[str, Any]:
     profile = {
         "name": student.display_name,
@@ -112,10 +189,8 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
     context["diagnostic_notes"] = quiz_payload.get("instructions")
     program.context = context
 
-    questions = quiz_payload.get("questions") or []
-    for index, question in enumerate(questions, start=1):
-        question.setdefault("id", f"q{index}")
-        question.setdefault("answer_type", "free_form")
+    raw_questions = quiz_payload.get("questions") or []
+    questions = [_normalise_quiz_question(question, index) for index, question in enumerate(raw_questions, start=1)]
     quiz = DiagnosticQuiz(
         program_id=program.id,
         instructions=quiz_payload.get("instructions"),
