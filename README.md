@@ -36,7 +36,9 @@ Read the detailed architecture in [docs/system-design.md](docs/system-design.md)
 ## Running Locally
 1. Install Docker and Docker Compose v2.
 2. Populate any required secrets in a `.env` file (see `docker-compose.yml` for environment variables). At minimum set
-   `OPENAI_API_KEY` and, if you use a custom endpoint, `OPENAI_API_BASE` (defaults to `https://api.openai.com/v1`).
+   `OPENAI_API_KEY` and, if you use a custom endpoint, `OPENAI_API_BASE` (defaults to `https://api.openai.com/v1`). The
+   frontend expects `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_WS_BASE_URL` to resolve from the browser – the compose
+   file defaults both to `localhost` so requests escape the container network correctly.
 3. Start the stack:
    ```bash
    docker compose up --build
@@ -44,7 +46,7 @@ Read the detailed architecture in [docs/system-design.md](docs/system-design.md)
 4. Access services:
    - Frontend: http://localhost:3000
    - Backend API docs: http://localhost:8000/docs
-   - Studio (content tools): http://localhost:4173
+   - Studio (content tools): http://localhost:5173
    - MinIO console: http://localhost:9001
 
 ## Next Steps

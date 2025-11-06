@@ -4,8 +4,34 @@ import React from 'react';
 
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
-const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE_URL ?? 'ws://localhost:8000';
+const DEFAULT_BROWSER_API_BASE = 'http://localhost:8000';
+const DEFAULT_SERVER_API_BASE = 'http://backend:8000';
+const DEFAULT_BROWSER_WS_BASE = 'ws://localhost:8000';
+
+const resolveApiBase = () => {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.NEXT_PUBLIC_API_BASE_URL ??
+      process.env.API_BASE_URL ??
+      DEFAULT_SERVER_API_BASE
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_BROWSER_API_BASE;
+};
+
+const resolveWebsocketBase = () => {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.NEXT_PUBLIC_WS_BASE_URL ??
+      process.env.WS_BASE_URL ??
+      DEFAULT_BROWSER_WS_BASE
+    );
+  }
+  return process.env.NEXT_PUBLIC_WS_BASE_URL ?? DEFAULT_BROWSER_WS_BASE;
+};
+
+const API_BASE = resolveApiBase();
+const WS_BASE = resolveWebsocketBase();
 
 interface StudentResponse {
   id: string;
@@ -54,7 +80,7 @@ interface LearningProgramResponse {
   topic_prompt: string;
   status: string;
   skill_profile?: string | null;
-  metadata?: Record<string, unknown> | null;
+  context?: Record<string, unknown> | null;
   lessons: LessonResponse[];
   created_at: string;
   updated_at: string;
@@ -76,6 +102,7 @@ interface ChatMessageOut {
   audio_url?: string | null;
   image_url?: string | null;
   render_formats: string[];
+  annotations?: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -110,7 +137,8 @@ type ChatSocketEvent =
   | ChatSocketErrorEvent;
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const url = new URL(path, API_BASE);
+  const response = await fetch(url.toString(), {
     ...init,
     headers: {
       'Content-Type': 'application/json',

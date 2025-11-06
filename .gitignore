@@ -6,5 +6,6 @@ __pycache__/
 node_modules/
 frontend/.next/
 frontend/out/
+studio/dist/
 .DS_Store
 *.log
