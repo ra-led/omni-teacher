@@ -169,5 +169,3 @@ class ChatMessage(TimestampMixin, Base):
     metadata = Column(JSON, default=dict)
 
     session = relationship("ChatSession", back_populates="messages")
-
-*** End Patch

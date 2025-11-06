@@ -5,16 +5,28 @@ from __future__ import annotations
 import json
 from typing import Any, Iterable
 
-from openai import OpenAI
+import httpx
 
 from .config import settings
 
 
 class OmniClient:
-    """Wrapper around the OpenAI SDK tailored for the Omni Teacher workflows."""
+    """Wrapper around OpenAI's HTTP APIs tailored for Omni Teacher flows."""
 
     def __init__(self) -> None:
-        self._client = OpenAI(api_key=settings.openai_api_key)
+        if not settings.openai_api_key:
+            msg = "OPENAI_API_KEY is required to use Omni integrations"
+            raise RuntimeError(msg)
+
+        base_url = settings.openai_api_base.rstrip("/")
+        self._http = httpx.Client(
+            base_url=base_url,
+            headers={
+                "Authorization": f"Bearer {settings.openai_api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=httpx.Timeout(120.0, connect=30.0),
+        )
         self._model = settings.omni_model
         self._voice = settings.tts_voice
 
@@ -34,16 +46,14 @@ class OmniClient:
             f"\n\nTopic description: {topic}\n\nStudent profile: {json.dumps(student_profile)}"
         )
 
-        response = self._client.chat.completions.create(
-            model=self._model,
-            response_format={"type": "json_object"},
-            temperature=0.7,
+        payload = self._chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
+            temperature=0.7,
+            response_format={"type": "json_object"},
         )
-        payload = response.choices[0].message.content
         if not payload:
             raise RuntimeError("Omni model did not return quiz content")
         return json.loads(payload)
@@ -78,16 +88,14 @@ class OmniClient:
             answers=json.dumps(answers),
         )
 
-        response = self._client.chat.completions.create(
-            model=self._model,
-            response_format={"type": "json_object"},
-            temperature=0.4,
+        payload = self._chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
+            temperature=0.4,
+            response_format={"type": "json_object"},
         )
-        payload = response.choices[0].message.content
         if not payload:
             raise RuntimeError("Omni model did not return evaluation content")
         return json.loads(payload)
@@ -109,10 +117,7 @@ class OmniClient:
             content=lesson_content,
             answers=json.dumps(answers),
         )
-        response = self._client.chat.completions.create(
-            model=self._model,
-            response_format={"type": "json_object"},
-            temperature=0.6,
+        payload = self._chat_completion(
             messages=[
                 {
                     "role": "system",
@@ -120,8 +125,9 @@ class OmniClient:
                 },
                 {"role": "user", "content": user_prompt},
             ],
+            temperature=0.6,
+            response_format={"type": "json_object"},
         )
-        payload = response.choices[0].message.content
         if not payload:
             raise RuntimeError("Omni model did not return reflection content")
         return json.loads(payload)
@@ -130,23 +136,58 @@ class OmniClient:
         """Generate a conversational reply for the chat interface."""
 
         conversation = list(messages)
-        response = self._client.chat.completions.create(
-            model=self._model,
-            temperature=0.8,
-            messages=conversation,
-        )
-        return response.choices[0].message.content or ""
+        payload = self._chat_completion(messages=conversation, temperature=0.8)
+        return payload or ""
 
     def synthesize_speech(self, text: str) -> bytes:
         """Convert assistant text into an audio payload."""
 
-        speech = self._client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice=self._voice,
-            input=text,
-            format="mp3",
+        response = self._http.post(
+            "/audio/speech",
+            json={
+                "model": "gpt-4o-mini-tts",
+                "voice": self._voice,
+                "input": text,
+                "format": "mp3",
+            },
+            headers={"Accept": "audio/mpeg"},
         )
-        return b"".join(speech.iter_bytes())
+        response.raise_for_status()
+        return response.content
+
+    def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
+        payload: dict[str, Any] = {
+            "model": self._model,
+            "messages": list(messages),
+            "temperature": temperature,
+        }
+        if response_format:
+            payload["response_format"] = response_format
+        response = self._http.post("/chat/completions", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        choices = data.get("choices") or []
+        if not choices:
+            return ""
+        message = choices[0].get("message", {})
+        return message.get("content", "")
+
+    def close(self) -> None:
+        """Close the underlying HTTP client."""
+
+        self._http.close()
 
 
-omni_client = OmniClient()
+_singleton: OmniClient | None = None
+
+
+def get_omni_client() -> OmniClient:
+    """Return a lazily-created :class:`OmniClient` instance."""
+
+    global _singleton
+    if _singleton is None:
+        _singleton = OmniClient()
+    return _singleton
+
+
+__all__ = ["OmniClient", "get_omni_client"]

@@ -8,7 +8,7 @@ from celery import Celery
 
 from .core.config import settings
 from .core.db import session_scope
-from .core.openai_client import omni_client
+from .core.openai_client import get_omni_client
 from .core.storage import storage_client
 from .models import ChatMessage
 from .schemas import DiagnosticSubmission
@@ -53,7 +53,8 @@ def generate_voice_for_message(message_id: str) -> dict[str, str]:
             return {"status": "missing"}
         if not message.text_content:
             return {"status": "no_text"}
-        audio_bytes = omni_client.synthesize_speech(message.text_content)
+        client = get_omni_client()
+        audio_bytes = client.synthesize_speech(message.text_content)
         object_name = f"sessions/{message.session_id}/{message.id}.mp3"
         audio_url = storage_client.store_audio(object_name=object_name, audio_bytes=audio_bytes)
         message.audio_url = audio_url

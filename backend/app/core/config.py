@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     minio_secret_key: str
     omni_model: str = "gpt-4o"
     openai_api_key: str
+    openai_api_base: str = "https://api.openai.com/v1"
     tts_voice: str = "alloy"
     tts_bucket_name: str = "omni-teacher-tts"
     max_chat_history: int = 12

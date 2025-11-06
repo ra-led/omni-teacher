@@ -35,7 +35,8 @@ Read the detailed architecture in [docs/system-design.md](docs/system-design.md)
 
 ## Running Locally
 1. Install Docker and Docker Compose v2.
-2. Populate any required secrets in a `.env` file (see `docker-compose.yml` for environment variables).
+2. Populate any required secrets in a `.env` file (see `docker-compose.yml` for environment variables). At minimum set
+   `OPENAI_API_KEY` and, if you use a custom endpoint, `OPENAI_API_BASE` (defaults to `https://api.openai.com/v1`).
 3. Start the stack:
    ```bash
    docker compose up --build

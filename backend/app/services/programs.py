@@ -8,7 +8,7 @@ from slugify import slugify
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..core.openai_client import omni_client
+from ..core.openai_client import get_omni_client
 from ..models import (
     ChatSession,
     DiagnosticQuiz,
@@ -87,7 +87,8 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
     db.commit()
     db.refresh(program)
 
-    quiz_payload = omni_client.generate_diagnostic_quiz(
+    client = get_omni_client()
+    quiz_payload = client.generate_diagnostic_quiz(
         topic=payload.topic,
         student_profile=_student_profile(student, payload),
     )
@@ -137,7 +138,8 @@ def submit_diagnostic(
     db.commit()
     db.refresh(attempt)
 
-    evaluation = omni_client.evaluate_quiz_answers(
+    client = get_omni_client()
+    evaluation = client.evaluate_quiz_answers(
         topic=program.topic_prompt,
         quiz={"questions": program.quiz.questions},
         answers=submission.answers,
@@ -196,7 +198,8 @@ def complete_lesson(
         teacher_notes=payload.teacher_notes,
     )
 
-    reflection = omni_client.summarise_lesson_attempt(
+    client = get_omni_client()
+    reflection = client.summarise_lesson_attempt(
         lesson_title=lesson.title,
         lesson_content=lesson.content_markdown,
         answers=payload.answers,

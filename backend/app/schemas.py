@@ -202,5 +202,3 @@ class CreateChatSession(BaseModel):
     program_id: str | None = None
     title: str | None = None
     tts_enabled: bool = False
-
-*** End Patch
