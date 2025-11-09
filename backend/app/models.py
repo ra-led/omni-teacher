@@ -114,6 +114,11 @@ class Lesson(TimestampMixin, Base):
     title = Column(String, nullable=False)
     content_markdown = Column(Text, nullable=False)
     resources = Column(JSON, default=list)
+    objectives = Column(JSON, default=list)
+    method_plan = Column(JSON, default=list)
+    practice_prompts = Column(JSON, default=list)
+    assessment = Column(JSON, default=dict)
+    estimated_minutes = Column(Integer, nullable=True)
 
     program = relationship("LearningProgram", back_populates="lessons")
     attempts = relationship("LessonAttempt", back_populates="lesson", cascade="all, delete-orphan")
@@ -130,6 +135,9 @@ class LessonAttempt(TimestampMixin, Base):
     reflection_positive = Column(Text, nullable=True)
     reflection_negative = Column(Text, nullable=True)
     teacher_notes = Column(Text, nullable=True)
+    score = Column(Integer, nullable=True)
+    stars = Column(Integer, nullable=True)
+    mastery_summary = Column(Text, nullable=True)
 
     lesson = relationship("Lesson", back_populates="attempts")
     student = relationship("Student", back_populates="lesson_attempts")

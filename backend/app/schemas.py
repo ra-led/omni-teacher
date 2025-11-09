@@ -57,26 +57,57 @@ class LessonResource(BaseModel):
     url: str | None = None
 
 
-class LessonResponse(BaseModel):
-    id: str
-    chapter: str | None = None
-    order_index: int
+class LessonPlanStep(BaseModel):
     title: str
-    content_markdown: str
-    resources: list[Any] | None = None
-    attempts: list[LessonAttemptResponse] = Field(default_factory=list)
+    description: str
+    duration_minutes: int | None = None
 
-    model_config = {"from_attributes": True}
+
+class LessonPracticePrompt(BaseModel):
+    prompt: str
+    modality: str | None = None
+
+
+class LessonAssessment(BaseModel):
+    prompt: str
+    success_criteria: list[str] | None = None
+    exemplar_answer: str | None = None
+    extension_idea: str | None = None
+    follow_up_questions: list[str] | None = None
 
 
 class LessonAttemptResponse(BaseModel):
     id: str
     status: str
     answers: dict[str, Any]
+    score: int | None = None
+    stars: int | None = None
+    mastery_summary: str | None = None
     reflection_positive: str | None = None
     reflection_negative: str | None = None
     teacher_notes: str | None = None
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class LessonResponse(BaseModel):
+    id: str
+    chapter: str | None = None
+    order_index: int
+    title: str
+    content_markdown: str
+    objectives: list[str] = Field(default_factory=list)
+    method_plan: list[LessonPlanStep] = Field(default_factory=list)
+    practice_prompts: list[LessonPracticePrompt] = Field(default_factory=list)
+    assessment: LessonAssessment | None = None
+    estimated_minutes: int | None = None
+    resources: list[Any] | None = None
+    attempts: list[LessonAttemptResponse] = Field(default_factory=list)
+    unlocked: bool = False
+    progress_state: Literal["locked", "available", "completed"] = "locked"
+    mastery_stars: int = 0
+    latest_attempt: LessonAttemptResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -94,6 +125,7 @@ class LearningProgramResponse(BaseModel):
     updated_at: datetime
     quiz: DiagnosticQuizResponse | None = None
     lessons: list[LessonResponse] = Field(default_factory=list)
+    total_mastery_stars: int = 0
 
     model_config = {"from_attributes": True}
 

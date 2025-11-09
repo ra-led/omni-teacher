@@ -94,7 +94,7 @@ def add_topic(student_id: str, payload: TopicCreate, db: Session = Depends(get_d
     refreshed = programs_service.get_program(db, program.id)
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program creation failed")
-    return LearningProgramResponse.model_validate(refreshed)
+    return programs_service.serialize_program(refreshed)
 
 
 @app.get(
@@ -106,7 +106,7 @@ def fetch_program(program_id: str, db: Session = Depends(get_db)) -> LearningPro
     program = programs_service.get_program(db, program_id)
     if not program:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
-    return LearningProgramResponse.model_validate(program)
+    return programs_service.serialize_program(program)
 
 
 @app.post(
@@ -127,7 +127,7 @@ def submit_diagnostic(program_id: str, submission: DiagnosticSubmission, db: Ses
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program evaluation failed")
     return DiagnosticResultResponse(
-        program=LearningProgramResponse.model_validate(refreshed),
+        program=programs_service.serialize_program(refreshed),
         attempt=QuizAttemptResponse.model_validate(attempt),
     )
 
@@ -141,10 +141,22 @@ def complete_lesson(lesson_id: str, payload: LessonCompletionRequest, db: Sessio
     try:
         attempt = programs_service.complete_lesson(db, lesson_id=lesson_id, payload=payload)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        message = str(exc)
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if "not found" in message.lower()
+            else status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=message) from exc
     lesson = attempt.lesson
+    lesson_payload = LessonResponse.model_validate(lesson)
+    if lesson.program:
+        serialized = programs_service.serialize_program(lesson.program)
+        updated = next((item for item in serialized.lessons if item.id == lesson.id), None)
+        if updated:
+            lesson_payload = updated
     return LessonCompletionResponse(
-        lesson=LessonResponse.model_validate(lesson),
+        lesson=lesson_payload,
         attempt=LessonAttemptResponse.model_validate(attempt),
     )
 
