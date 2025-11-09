@@ -90,9 +90,24 @@ interface LearningProgramResponse {
   status: string;
   skill_profile?: string | null;
   context?: Record<string, unknown> | null;
+  quiz?: DiagnosticQuizResponse | null;
   lessons: LessonResponse[];
   created_at: string;
   updated_at: string;
+}
+
+interface QuizQuestion {
+  id: string;
+  prompt: string;
+  answer_type: 'free_form' | 'multiple_choice' | 'multi_select';
+  choices?: string[] | null;
+  hints?: string[] | null;
+}
+
+interface DiagnosticQuizResponse {
+  id: string;
+  instructions?: string | null;
+  questions: QuizQuestion[];
 }
 
 interface ProgressSnapshot {
@@ -187,6 +202,7 @@ export default function HomePage() {
   const [websocket, setWebsocket] = React.useState<WebSocket | null>(null);
   const [isConnectingChat, setIsConnectingChat] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
 
   const [studentForm, setStudentForm] = React.useState({
     display_name: '',
@@ -285,6 +301,70 @@ export default function HomePage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load program');
+    }
+  };
+
+  React.useEffect(() => {
+    if (!selectedProgram?.quiz) {
+      setQuizResponses({});
+      return;
+    }
+    const initial: Record<string, string | string[]> = {};
+    selectedProgram.quiz.questions.forEach((question) => {
+      if (question.answer_type === 'multi_select') {
+        initial[question.id] = [];
+      } else {
+        initial[question.id] = '';
+      }
+    });
+    setQuizResponses(initial);
+  }, [selectedProgram?.id, selectedProgram?.quiz?.id]);
+
+  const handleQuizAnswerChange = (
+    question: QuizQuestion,
+    value: string,
+    checked?: boolean,
+  ) => {
+    setQuizResponses((prev) => {
+      const next = { ...prev };
+      if (question.answer_type === 'multi_select') {
+        const existing = Array.isArray(next[question.id]) ? [...(next[question.id] as string[])] : [];
+        if (checked) {
+          if (!existing.includes(value)) {
+            existing.push(value);
+          }
+        } else {
+          next[question.id] = existing.filter((item) => item !== value);
+          return next;
+        }
+        next[question.id] = existing;
+      } else {
+        next[question.id] = value;
+      }
+      return next;
+    });
+  };
+
+  const handleSubmitDiagnostic = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedProgram || !student) return;
+    try {
+      setError(null);
+      const payload = {
+        answers: quizResponses,
+      };
+      const result = await apiRequest<{ program: LearningProgramResponse }>(
+        `/api/programs/${selectedProgram.id}/diagnostic/submit`,
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+      );
+      setSelectedProgram(result.program);
+      await refreshCatalog(student.id);
+      await refreshProgress(student.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to submit diagnostic quiz');
     }
   };
 
@@ -550,7 +630,97 @@ export default function HomePage() {
               )}
             </div>
             {selectedProgram.summary && <p>{selectedProgram.summary}</p>}
+            {selectedProgram.context?.diagnostic_notes && (
+              <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}>
+                {String(selectedProgram.context.diagnostic_notes)}
+              </div>
+            )}
           </header>
+
+          {selectedProgram.status === 'awaiting_diagnostic' && selectedProgram.quiz && (
+            <form
+              onSubmit={handleSubmitDiagnostic}
+              className="lesson-card"
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <header>
+                <h3 style={{ margin: '0 0 0.75rem 0' }}>Diagnostic quiz</h3>
+                {selectedProgram.quiz.instructions && <p>{selectedProgram.quiz.instructions}</p>}
+              </header>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {selectedProgram.quiz.questions.map((question) => (
+                  <article key={question.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <strong>{question.prompt}</strong>
+                      {question.hints && question.hints.length > 0 && (
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#475569' }}>
+                          Hints: {question.hints.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    {question.answer_type === 'free_form' && (
+                      <textarea
+                        required
+                        value={(quizResponses[question.id] as string) ?? ''}
+                        onChange={(event) => handleQuizAnswerChange(question, event.target.value)}
+                        placeholder="Type your answer"
+                      />
+                    )}
+                    {question.answer_type === 'multiple_choice' && question.choices && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {question.choices.map((choice) => (
+                          <label key={choice} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="radio"
+                              name={`quiz-${question.id}`}
+                              value={choice}
+                              checked={quizResponses[question.id] === choice}
+                              onChange={(event) => handleQuizAnswerChange(question, event.target.value)}
+                              required
+                            />
+                            <span>{choice}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {question.answer_type === 'multi_select' && question.choices && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {question.choices.map((choice) => {
+                          const selectedValues = Array.isArray(quizResponses[question.id])
+                            ? (quizResponses[question.id] as string[])
+                            : [];
+                          const checked = selectedValues.includes(choice);
+                          return (
+                            <label key={choice} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <input
+                                type="checkbox"
+                                value={choice}
+                                checked={checked}
+                                onChange={(event) =>
+                                  handleQuizAnswerChange(question, event.target.value, event.target.checked)
+                                }
+                              />
+                              <span>{choice}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {!question.choices && question.answer_type !== 'free_form' && (
+                      <textarea
+                        value={(quizResponses[question.id] as string) ?? ''}
+                        onChange={(event) => handleQuizAnswerChange(question, event.target.value)}
+                        placeholder="Type your answer"
+                      />
+                    )}
+                  </article>
+                ))}
+              </div>
+              <button type="submit" className="primary-button">
+                Submit answers
+              </button>
+            </form>
+          )}
 
           <div style={{ display: 'grid', gap: '1rem' }}>
             {selectedProgram.lessons.map((lesson) => (
