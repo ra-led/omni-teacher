@@ -43,24 +43,31 @@ def ensure_schema() -> None:
     """Ensure database schema contains the latest adaptive learning columns."""
 
     inspector = inspect(engine)
-    try:
-        lesson_columns = {column["name"] for column in inspector.get_columns("lessons")}
-    except Exception:
-        # Lessons table might not exist yet (fresh database); create_all will handle it.
-        return
+
+    def existing_columns(table: str) -> set[str] | None:
+        try:
+            return {column["name"] for column in inspector.get_columns(table)}
+        except Exception:
+            # Table might not exist yet (fresh database); create_all will handle it.
+            return None
 
     dialect = engine.dialect.name
-
     json_type = "JSONB" if dialect == "postgresql" else "JSON"
 
-    def add_column(name: str, default: str | None = None, column_type: str | None = None) -> None:
-        if name in lesson_columns:
+    def add_column(
+        table: str,
+        columns: set[str],
+        name: str,
+        *,
+        column_type: str,
+        default: str | None = None,
+    ) -> None:
+        if name in columns:
             return
 
-        col_type = column_type or json_type
         default_clause = ""
         if default is not None:
-            if dialect == "postgresql" and col_type.upper().startswith("JSON"):
+            if dialect == "postgresql" and column_type.upper().startswith("JSON"):
                 default_clause = f" DEFAULT '{default}'::jsonb"
             elif dialect == "postgresql":
                 default_clause = f" DEFAULT {default}"
@@ -68,15 +75,67 @@ def ensure_schema() -> None:
                 default_clause = f" DEFAULT '{default}'"
 
         statement = text(
-            f"ALTER TABLE lessons ADD COLUMN {name} {col_type}{default_clause}"
+            f"ALTER TABLE {table} ADD COLUMN {name} {column_type}{default_clause}"
         )
         with engine.begin() as connection:
             connection.execute(statement)
-        lesson_columns.add(name)
+        columns.add(name)
 
-    add_column("objectives", default="[]")
-    add_column("method_plan", default="[]")
-    add_column("practice_prompts", default="[]")
-    add_column("assessment", default="{}")
-    add_column("estimated_minutes", column_type="INTEGER")
+    lesson_columns = existing_columns("lessons")
+    if lesson_columns is not None:
+        add_column(
+            "lessons",
+            lesson_columns,
+            "objectives",
+            column_type=json_type,
+            default="[]",
+        )
+        add_column(
+            "lessons",
+            lesson_columns,
+            "method_plan",
+            column_type=json_type,
+            default="[]",
+        )
+        add_column(
+            "lessons",
+            lesson_columns,
+            "practice_prompts",
+            column_type=json_type,
+            default="[]",
+        )
+        add_column(
+            "lessons",
+            lesson_columns,
+            "assessment",
+            column_type=json_type,
+            default="{}",
+        )
+        add_column(
+            "lessons",
+            lesson_columns,
+            "estimated_minutes",
+            column_type="INTEGER",
+        )
+
+    attempt_columns = existing_columns("lesson_attempts")
+    if attempt_columns is not None:
+        add_column(
+            "lesson_attempts",
+            attempt_columns,
+            "score",
+            column_type="INTEGER",
+        )
+        add_column(
+            "lesson_attempts",
+            attempt_columns,
+            "stars",
+            column_type="INTEGER",
+        )
+        add_column(
+            "lesson_attempts",
+            attempt_columns,
+            "mastery_summary",
+            column_type="TEXT",
+        )
 
