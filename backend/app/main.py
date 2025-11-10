@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from .core.config import settings
-from .core.db import SessionLocal, engine, get_db
+from .core.db import SessionLocal, engine, ensure_schema, get_db
 from .core.storage import storage_client
 from .models import Base, ChatMessage, ChatSession
 from .schemas import (
@@ -56,6 +56,7 @@ app.add_middleware(
 @app.on_event("startup")
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     storage_client.ensure_bucket()
 
 
