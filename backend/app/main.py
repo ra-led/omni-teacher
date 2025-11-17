@@ -186,6 +186,7 @@ def create_chat_session(payload: CreateChatSession, db: Session = Depends(get_db
         session_id=session_id,
         student_id=payload.student_id,
         program_id=payload.program_id,
+        lesson_id=payload.lesson_id,
         tts_enabled=payload.tts_enabled,
     )
     if payload.title:
@@ -220,6 +221,7 @@ def fetch_chat_session(session_id: str, db: Session = Depends(get_db)) -> ChatTr
 async def chat_socket(websocket: WebSocket, session_id: str) -> None:
     student_id = websocket.query_params.get("student_id")
     program_id = websocket.query_params.get("program_id")
+    lesson_id = websocket.query_params.get("lesson_id")
     tts_enabled = websocket.query_params.get("tts", "false").lower() == "true"
 
     if not student_id:
@@ -234,6 +236,7 @@ async def chat_socket(websocket: WebSocket, session_id: str) -> None:
             session_id=session_id,
             student_id=student_id,
             program_id=program_id,
+            lesson_id=lesson_id,
             tts_enabled=tts_enabled,
         )
         history = (

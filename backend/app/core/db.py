@@ -139,3 +139,12 @@ def ensure_schema() -> None:
             column_type="TEXT",
         )
 
+    chat_columns = existing_columns("chat_sessions")
+    if chat_columns is not None:
+        add_column(
+            "chat_sessions",
+            chat_columns,
+            "lesson_id",
+            column_type="TEXT",
+        )
+

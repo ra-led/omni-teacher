@@ -81,12 +81,6 @@ interface LessonResource {
   url?: string | null;
 }
 
-interface LessonPlanStep {
-  title: string;
-  description: string;
-  duration_minutes?: number | null;
-}
-
 interface LessonPracticePrompt {
   prompt: string;
   modality?: string | null;
@@ -112,7 +106,6 @@ interface LessonResponse {
   title: string;
   content_markdown: string;
   objectives: string[];
-  method_plan: LessonPlanStep[];
   practice_prompts: LessonPracticePrompt[];
   assessment?: LessonAssessment | null;
   estimated_minutes?: number | null;
@@ -184,6 +177,7 @@ interface ChatSessionSnapshot {
   id: string;
   student_id: string;
   program_id?: string | null;
+  lesson_id?: string | null;
   title: string;
   tts_enabled: boolean;
   created_at: string;
@@ -268,6 +262,12 @@ export default function HomePage() {
   const [messages, setMessages] = React.useState<ChatMessageOut[]>([]);
   const [websocket, setWebsocket] = React.useState<WebSocket | null>(null);
   const [isConnectingChat, setIsConnectingChat] = React.useState(false);
+  const [lessonChatSession, setLessonChatSession] = React.useState<ChatSessionSnapshot | null>(null);
+  const [lessonChatLessonId, setLessonChatLessonId] = React.useState<string | null>(null);
+  const [lessonChatMessages, setLessonChatMessages] = React.useState<ChatMessageOut[]>([]);
+  const [lessonChatSocket, setLessonChatSocket] = React.useState<WebSocket | null>(null);
+  const [lessonChatInput, setLessonChatInput] = React.useState('');
+  const [isConnectingLessonChat, setIsConnectingLessonChat] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
@@ -299,12 +299,32 @@ export default function HomePage() {
     if (!selectedProgram) return null;
     return selectedProgram.lessons.find((lesson) => lesson.id === activeLessonId) ?? null;
   }, [selectedProgram, activeLessonId]);
+  const selectedLessonId = selectedLesson?.id ?? null;
+  const selectedLessonTitle = selectedLesson?.title ?? '';
+
+  React.useEffect(() => {
+    if (!selectedLessonId || (lessonChatLessonId && lessonChatLessonId !== selectedLessonId)) {
+      setLessonChatSession(null);
+      setLessonChatLessonId(null);
+      setLessonChatMessages([]);
+      setLessonChatSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+    }
+  }, [selectedLessonId, lessonChatLessonId]);
 
   React.useEffect(() => {
     return () => {
       websocket?.close();
     };
   }, [websocket]);
+
+  React.useEffect(() => {
+    return () => {
+      lessonChatSocket?.close();
+    };
+  }, [lessonChatSocket]);
 
   React.useEffect(() => {
     if (!selectedProgram) {
@@ -527,6 +547,35 @@ export default function HomePage() {
     }
   };
 
+  const handleLaunchLessonChat = async (lesson: LessonResponse) => {
+    if (!student) return;
+    try {
+      setError(null);
+      setIsConnectingLessonChat(true);
+      setLessonChatMessages([]);
+      setLessonChatSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+      const session = await apiRequest<ChatSessionSnapshot>('/api/chat/sessions', {
+        method: 'POST',
+        body: JSON.stringify({
+          student_id: student.id,
+          program_id: selectedProgram?.id,
+          lesson_id: lesson.id,
+          title: `${lesson.title} Interactive Lesson`,
+          tts_enabled: false,
+        }),
+      });
+      setLessonChatSession(session);
+      setLessonChatLessonId(lesson.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to start lesson chat');
+    } finally {
+      setIsConnectingLessonChat(false);
+    }
+  };
+
   const handleStartChat = async (ttsEnabled: boolean) => {
     if (!student) return;
     try {
@@ -593,6 +642,62 @@ export default function HomePage() {
     };
   }, [chatSession, student, selectedProgram]);
 
+  React.useEffect(() => {
+    if (!lessonChatSession || !student || !lessonChatLessonId) {
+      setLessonChatMessages([]);
+      setLessonChatSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+      return;
+    }
+
+    const url = new URL(`${WS_BASE}/ws/chat/${lessonChatSession.id}`);
+    url.searchParams.set('student_id', student.id);
+    if (selectedProgram) {
+      url.searchParams.set('program_id', selectedProgram.id);
+    }
+    url.searchParams.set('lesson_id', lessonChatLessonId);
+    url.searchParams.set('tts', String(lessonChatSession.tts_enabled));
+
+    const socket = new WebSocket(url);
+    setLessonChatSocket(socket);
+    let introSent = false;
+
+    socket.onopen = () => {
+      if (!introSent && selectedLessonTitle) {
+        socket.send(
+          JSON.stringify({
+            content_type: 'text',
+            text: `Hi Omni Teacher! I'm ready to explore "${selectedLessonTitle}". Please present the material in steps and check my understanding along the way.`,
+          }),
+        );
+        introSent = true;
+      }
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data) as ChatSocketEvent;
+      if (data.type === 'history') {
+        setLessonChatMessages(data.messages);
+      } else if (data.type === 'student_message' || data.type === 'assistant_message') {
+        setLessonChatMessages((prev) => [...prev, data.message]);
+      }
+    };
+
+    socket.onerror = () => {
+      setError('Lesson chat connection failed');
+    };
+
+    socket.onclose = () => {
+      setLessonChatSocket(null);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [lessonChatSession, student, selectedProgram, lessonChatLessonId, selectedLessonId, selectedLessonTitle]);
+
   const handleSendChat = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
@@ -611,6 +716,25 @@ export default function HomePage() {
     };
     websocket.send(JSON.stringify(payload));
     setChatInput({ text: '', image_url: '', generate_voice: false });
+  };
+
+  const handleSendLessonChat = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!lessonChatSocket || lessonChatSocket.readyState !== WebSocket.OPEN) {
+      setError('Interactive lesson chat is not connected yet');
+      return;
+    }
+    if (!lessonChatInput.trim()) {
+      setError('Share a response before sending to the tutor');
+      return;
+    }
+    lessonChatSocket.send(
+      JSON.stringify({
+        content_type: 'text',
+        text: lessonChatInput,
+      }),
+    );
+    setLessonChatInput('');
   };
 
   return (
@@ -940,20 +1064,56 @@ export default function HomePage() {
                           <MarkdownRenderer content={selectedLesson.content_markdown} />
                         </section>
                         <section className="lesson-section">
-                          <h4>Teaching plan</h4>
-                          <ol className="lesson-plan">
-                            {selectedLesson.method_plan.map((step, index) => (
-                              <li key={`${step.title}-${index}`}>
-                                <div>
-                                  <strong>{step.title}</strong>
-                                  {typeof step.duration_minutes === 'number' && (
-                                    <small> · {step.duration_minutes} min</small>
-                                  )}
-                                </div>
-                                <p>{step.description}</p>
-                              </li>
-                            ))}
-                          </ol>
+                          <h4>Interactive lesson</h4>
+                          {lessonChatLessonId !== selectedLesson.id ? (
+                            <button
+                              type="button"
+                              className="primary-button"
+                              onClick={() => handleLaunchLessonChat(selectedLesson)}
+                              disabled={isConnectingLessonChat}
+                            >
+                              {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
+                            </button>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                              <div className="chat-thread">
+                                {lessonChatMessages.map((message) => (
+                                  <article key={message.id} className={`chat-message ${message.sender}`}>
+                                    <header style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <strong>
+                                        {message.sender === 'assistant' ? 'Omni Teacher' : student?.display_name ?? 'You'}
+                                      </strong>
+                                      <small>{formatDate(message.created_at)}</small>
+                                    </header>
+                                    {message.text && <MarkdownRenderer content={message.text} />}
+                                    {message.image_url && (
+                                      <img
+                                        src={message.image_url}
+                                        alt="Shared during lesson"
+                                        style={{ maxWidth: '100%', borderRadius: '0.75rem' }}
+                                      />
+                                    )}
+                                    {message.audio_url && <audio controls src={message.audio_url} />}
+                                  </article>
+                                ))}
+                                {lessonChatMessages.length === 0 && (
+                                  <p style={{ margin: 0 }}>
+                                    Waiting for Omni Teacher to introduce the lesson. Share how you feel to begin!
+                                  </p>
+                                )}
+                              </div>
+                              <form className="chat-input" onSubmit={handleSendLessonChat}>
+                                <textarea
+                                  placeholder="Respond to Omni Teacher here…"
+                                  value={lessonChatInput}
+                                  onChange={(event) => setLessonChatInput(event.target.value)}
+                                />
+                                <button type="submit" className="primary-button">
+                                  Send response
+                                </button>
+                              </form>
+                            </div>
+                          )}
                         </section>
                         <section className="lesson-section">
                           <h4>Practice ideas</h4>

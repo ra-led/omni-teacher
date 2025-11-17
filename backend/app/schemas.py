@@ -98,7 +98,6 @@ class LessonResponse(BaseModel):
     title: str
     content_markdown: str
     objectives: list[str] = Field(default_factory=list)
-    method_plan: list[LessonPlanStep] = Field(default_factory=list)
     practice_prompts: list[LessonPracticePrompt] = Field(default_factory=list)
     assessment: LessonAssessment | None = None
     estimated_minutes: int | None = None
@@ -221,6 +220,7 @@ class ChatSessionSnapshot(BaseModel):
     id: str
     student_id: str
     program_id: str | None = None
+    lesson_id: str | None = None
     title: str
     tts_enabled: bool
     created_at: datetime
@@ -232,5 +232,6 @@ class ChatSessionSnapshot(BaseModel):
 class CreateChatSession(BaseModel):
     student_id: str
     program_id: str | None = None
+    lesson_id: str | None = None
     title: str | None = None
     tts_enabled: bool = False

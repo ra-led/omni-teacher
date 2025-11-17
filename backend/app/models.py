@@ -149,12 +149,14 @@ class ChatSession(TimestampMixin, Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     student_id = Column(String, ForeignKey("students.id"), nullable=False)
     program_id = Column(String, ForeignKey("learning_programs.id"), nullable=True)
+    lesson_id = Column(String, ForeignKey("lessons.id"), nullable=True)
     title = Column(String, nullable=False, default="Study chat")
     tts_enabled = Column(Boolean, default=False, nullable=False)
     persona_state = Column(JSON, default=dict)
 
     student = relationship("Student", back_populates="chat_sessions")
     program = relationship("LearningProgram")
+    lesson = relationship("Lesson")
     messages = relationship(
         "ChatMessage",
         back_populates="session",
