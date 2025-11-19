@@ -119,6 +119,7 @@ class Lesson(TimestampMixin, Base):
     practice_prompts = Column(JSON, default=list)
     assessment = Column(JSON, default=dict)
     estimated_minutes = Column(Integer, nullable=True)
+    allow_submission = Column(Boolean, default=False, nullable=False)
 
     program = relationship("LearningProgram", back_populates="lessons")
     attempts = relationship("LessonAttempt", back_populates="lesson", cascade="all, delete-orphan")

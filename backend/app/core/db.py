@@ -117,6 +117,13 @@ def ensure_schema() -> None:
             "estimated_minutes",
             column_type="INTEGER",
         )
+        add_column(
+            "lessons",
+            lesson_columns,
+            "allow_submission",
+            column_type="BOOLEAN",
+            default="false",
+        )
 
     attempt_columns = existing_columns("lesson_attempts")
     if attempt_columns is not None:

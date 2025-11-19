@@ -471,6 +471,7 @@ def serialize_program(program: LearningProgram) -> LearningProgramResponse:
                 "latest_attempt": LessonAttemptResponse.model_validate(latest_attempt)
                 if latest_attempt
                 else None,
+                "submission_open": bool(getattr(lesson, "allow_submission", False)),
             }
         )
         serialised_lessons.append(lesson_model)
@@ -577,6 +578,8 @@ def complete_lesson(
     lesson = db.get(Lesson, lesson_id)
     if not lesson:
         raise ValueError("Lesson not found")
+    if not getattr(lesson, "allow_submission", False):
+        raise ValueError("This lesson isn't ready for submissions yet. Keep working with Omni Teacher!")
     student = db.get(Student, payload.student_id)
     if not student:
         raise ValueError("Student not found")

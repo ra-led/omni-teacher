@@ -137,6 +137,10 @@ def _system_prompt(
                 + " Then celebrate with a 1-3 star rating and a next-step tip."
             )
         prompt.append(
+            "When you decide the learner is ready to finish, end your guidance with a brief encouragement and append [[READY_FOR_STARS]] to your reply."
+            " Never mention this token aloud; it simply signals the app to reveal the submission button."
+        )
+        prompt.append(
             "Throughout the chat, alternate between presenting material, asking questions, and confirming understanding before advancing."
         )
     return " \n".join(prompt)
@@ -194,6 +198,7 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     trimmed_history = history[-settings.max_chat_history :]
     conversation = _build_conversation(session, trimmed_history)
     client = get_omni_client()
+    submission_unlocked = False
     try:
         reply_text = client.chat_reply(conversation)
     except OmniAPIError:
@@ -201,6 +206,11 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
             "I'm having a little trouble reaching my brainy assistant right now. "
             "Let's keep talking, and I'll fetch more help soon!"
         )
+
+    if session.lesson_id and reply_text:
+        if "[[READY_FOR_STARS]]" in reply_text:
+            reply_text = reply_text.replace("[[READY_FOR_STARS]]", "").strip()
+            submission_unlocked = True
 
     assistant_message = ChatMessage(
         session_id=session.id,
@@ -212,6 +222,11 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     db.add(assistant_message)
     db.commit()
     db.refresh(assistant_message)
+
+    if submission_unlocked and session.lesson:
+        session.lesson.allow_submission = True
+        db.commit()
+        db.refresh(session.lesson)
 
     should_voice = session.tts_enabled or voice_requested
     if should_voice and reply_text:
