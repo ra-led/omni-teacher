@@ -641,7 +641,7 @@ export default function HomePage() {
     return () => {
       socket.close();
     };
-  }, [chatSession, student, selectedProgram]);
+  }, [chatSession?.id, student?.id, selectedProgram?.id]);
 
   React.useEffect(() => {
     if (!lessonChatSession || !student || !lessonChatLessonId) {
@@ -700,7 +700,14 @@ export default function HomePage() {
     return () => {
       socket.close();
     };
-  }, [lessonChatSession, student, selectedProgram, lessonChatLessonId, selectedLessonId, selectedLessonTitle]);
+  }, [
+    lessonChatSession?.id,
+    student?.id,
+    selectedProgram?.id,
+    lessonChatLessonId,
+    selectedLessonId,
+    selectedLessonTitle,
+  ]);
 
   const handleSendChat = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
