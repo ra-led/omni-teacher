@@ -259,15 +259,15 @@ export default function HomePage() {
   const [catalog, setCatalog] = React.useState<ProgramCatalogEntry[]>([]);
   const [selectedProgram, setSelectedProgram] = React.useState<LearningProgramResponse | null>(null);
   const [progress, setProgress] = React.useState<ProgressSnapshot | null>(null);
-  const [chatSession, setChatSession] = React.useState<ChatSessionSnapshot | null>(null);
-  const [messages, setMessages] = React.useState<ChatMessageOut[]>([]);
-  const [websocket, setWebsocket] = React.useState<WebSocket | null>(null);
-  const [isConnectingChat, setIsConnectingChat] = React.useState(false);
   const [lessonChatSession, setLessonChatSession] = React.useState<ChatSessionSnapshot | null>(null);
   const [lessonChatLessonId, setLessonChatLessonId] = React.useState<string | null>(null);
   const [lessonChatMessages, setLessonChatMessages] = React.useState<ChatMessageOut[]>([]);
   const [lessonChatSocket, setLessonChatSocket] = React.useState<WebSocket | null>(null);
-  const [lessonChatInput, setLessonChatInput] = React.useState('');
+  const [lessonChatInput, setLessonChatInput] = React.useState({
+    text: '',
+    image_url: '',
+    generate_voice: false,
+  });
   const [isConnectingLessonChat, setIsConnectingLessonChat] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -290,12 +290,6 @@ export default function HomePage() {
 
   const diagnosticNotes = formatDiagnosticNotes(selectedProgram?.context?.diagnostic_notes);
 
-  const [chatInput, setChatInput] = React.useState({
-    text: '',
-    image_url: '',
-    generate_voice: false,
-  });
-
   const selectedLesson = React.useMemo(() => {
     if (!selectedProgram) return null;
     return selectedProgram.lessons.find((lesson) => lesson.id === activeLessonId) ?? null;
@@ -314,12 +308,6 @@ export default function HomePage() {
       });
     }
   }, [selectedLessonId, lessonChatLessonId]);
-
-  React.useEffect(() => {
-    return () => {
-      websocket?.close();
-    };
-  }, [websocket]);
 
   React.useEffect(() => {
     return () => {
@@ -383,8 +371,6 @@ export default function HomePage() {
       });
       setStudent(created);
       setSelectedProgram(null);
-      setChatSession(null);
-      setMessages([]);
       await refreshCatalog(created.id);
       await refreshProgress(created.id);
     } catch (err) {
@@ -548,7 +534,7 @@ export default function HomePage() {
     }
   };
 
-  const handleLaunchLessonChat = async (lesson: LessonResponse) => {
+  const handleLaunchLessonChat = async (lesson: LessonResponse, ttsEnabled: boolean) => {
     if (!student) return;
     try {
       setError(null);
@@ -565,83 +551,18 @@ export default function HomePage() {
           program_id: selectedProgram?.id,
           lesson_id: lesson.id,
           title: `${lesson.title} Interactive Lesson`,
-          tts_enabled: false,
+          tts_enabled: ttsEnabled,
         }),
       });
       setLessonChatSession(session);
       setLessonChatLessonId(lesson.id);
+      setLessonChatInput({ text: '', image_url: '', generate_voice: ttsEnabled });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to start lesson chat');
     } finally {
       setIsConnectingLessonChat(false);
     }
   };
-
-  const handleStartChat = async (ttsEnabled: boolean) => {
-    if (!student) return;
-    try {
-      setError(null);
-      setIsConnectingChat(true);
-      const session = await apiRequest<ChatSessionSnapshot>('/api/chat/sessions', {
-        method: 'POST',
-        body: JSON.stringify({
-          student_id: student.id,
-          program_id: selectedProgram?.id,
-          tts_enabled: ttsEnabled,
-          title: selectedProgram ? `${selectedProgram.title} Tutoring` : 'Omni Teacher Chat',
-        }),
-      });
-      setChatSession(session);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to start chat');
-    } finally {
-      setIsConnectingChat(false);
-    }
-  };
-
-  React.useEffect(() => {
-    if (!chatSession || !student) {
-      setMessages([]);
-      setWebsocket((prev) => {
-        prev?.close();
-        return null;
-      });
-      return;
-    }
-
-    const url = new URL(`${WS_BASE}/ws/chat/${chatSession.id}`);
-    url.searchParams.set('student_id', student.id);
-    if (selectedProgram) {
-      url.searchParams.set('program_id', selectedProgram.id);
-    }
-    url.searchParams.set('tts', String(chatSession.tts_enabled));
-
-    const socket = new WebSocket(url);
-    setWebsocket(socket);
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data) as ChatSocketEvent;
-      if (data.type === 'history') {
-        setMessages(data.messages);
-      } else if (data.type === 'student_message' || data.type === 'assistant_message') {
-        setMessages((prev) => [...prev, data.message]);
-      } else if (data.type === 'error') {
-        setError('Chat error: unable to process message');
-      }
-    };
-
-    socket.onerror = () => {
-      setError('Chat connection failed');
-    };
-
-    socket.onclose = () => {
-      setWebsocket(null);
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, [chatSession?.id, student?.id, selectedProgram?.id]);
 
   React.useEffect(() => {
     if (!lessonChatSession || !student || !lessonChatLessonId) {
@@ -709,43 +630,27 @@ export default function HomePage() {
     selectedLessonTitle,
   ]);
 
-  const handleSendChat = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-      setError('Chat is not connected yet');
-      return;
-    }
-    if (!chatInput.text && !chatInput.image_url) {
-      setError('Please provide a message or an image URL');
-      return;
-    }
-    const payload = {
-      content_type: chatInput.image_url ? 'image' : 'text',
-      text: chatInput.image_url ? undefined : chatInput.text,
-      image_url: chatInput.image_url || undefined,
-      generate_voice: chatInput.generate_voice,
-    };
-    websocket.send(JSON.stringify(payload));
-    setChatInput({ text: '', image_url: '', generate_voice: false });
-  };
-
   const handleSendLessonChat = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!lessonChatSocket || lessonChatSocket.readyState !== WebSocket.OPEN) {
       setError('Interactive lesson chat is not connected yet');
       return;
     }
-    if (!lessonChatInput.trim()) {
-      setError('Share a response before sending to the tutor');
+    const trimmed = lessonChatInput.text.trim();
+    if (!trimmed && !lessonChatInput.image_url) {
+      setError('Share a response or image before sending to the tutor');
       return;
     }
+    const payload = {
+      content_type: lessonChatInput.image_url ? 'image' : 'text',
+      text: lessonChatInput.image_url ? undefined : trimmed,
+      image_url: lessonChatInput.image_url || undefined,
+      generate_voice: lessonChatInput.generate_voice || lessonChatSession?.tts_enabled || false,
+    };
     lessonChatSocket.send(
-      JSON.stringify({
-        content_type: 'text',
-        text: lessonChatInput,
-      }),
+      JSON.stringify(payload),
     );
-    setLessonChatInput('');
+    setLessonChatInput({ text: '', image_url: '', generate_voice: lessonChatSession?.tts_enabled ?? false });
   };
 
   return (
@@ -1077,14 +982,24 @@ export default function HomePage() {
                         <section className="lesson-section">
                           <h4>Interactive lesson</h4>
                           {lessonChatLessonId !== selectedLesson.id ? (
-                            <button
-                              type="button"
-                              className="primary-button"
-                              onClick={() => handleLaunchLessonChat(selectedLesson)}
-                              disabled={isConnectingLessonChat}
-                            >
-                              {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
-                            </button>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                              <button
+                                type="button"
+                                className="primary-button"
+                                onClick={() => handleLaunchLessonChat(selectedLesson, false)}
+                                disabled={isConnectingLessonChat}
+                              >
+                                {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
+                              </button>
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={() => handleLaunchLessonChat(selectedLesson, true)}
+                                disabled={isConnectingLessonChat}
+                              >
+                                {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
+                              </button>
+                            </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <div className="chat-thread">
@@ -1114,11 +1029,38 @@ export default function HomePage() {
                                 )}
                               </div>
                               <form className="chat-input" onSubmit={handleSendLessonChat}>
-                                <textarea
-                                  placeholder="Respond to Omni Teacher here…"
-                                  value={lessonChatInput}
-                                  onChange={(event) => setLessonChatInput(event.target.value)}
-                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                  <textarea
+                                    placeholder="Respond to Omni Teacher here…"
+                                    value={lessonChatInput.text}
+                                    onChange={(event) =>
+                                      setLessonChatInput((prev) => ({ ...prev, text: event.target.value }))
+                                    }
+                                  />
+                                  <input
+                                    type="url"
+                                    placeholder="Optional image URL for the tutor"
+                                    value={lessonChatInput.image_url}
+                                    onChange={(event) =>
+                                      setLessonChatInput((prev) => ({ ...prev, image_url: event.target.value }))
+                                    }
+                                  />
+                                  <div className="chat-controls">
+                                    <label>
+                                      <input
+                                        type="checkbox"
+                                        checked={lessonChatInput.generate_voice}
+                                        onChange={(event) =>
+                                          setLessonChatInput((prev) => ({
+                                            ...prev,
+                                            generate_voice: event.target.checked,
+                                          }))
+                                        }
+                                      />
+                                      Request playful voice reply
+                                    </label>
+                                  </div>
+                                </div>
                                 <button type="submit" className="primary-button">
                                   Send response
                                 </button>
@@ -1277,91 +1219,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {student && (
-        <section className="chat-container">
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ margin: 0 }}>Tutor chat</h2>
-              <p style={{ margin: 0, color: '#475569' }}>
-                Talk with Omni Teacher, share images, and request playful voice responses.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                className="secondary-button"
-                onClick={() => handleStartChat(false)}
-                disabled={isConnectingChat}
-              >
-                Text chat
-              </button>
-              <button
-                className="primary-button"
-                onClick={() => handleStartChat(true)}
-                disabled={isConnectingChat}
-              >
-                Chat with voice
-              </button>
-            </div>
-          </header>
-
-          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {messages.map((message) => (
-              <article key={message.id} className={`chat-message ${message.sender}`}>
-                <header style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong>{message.sender === 'assistant' ? 'Omni Teacher' : student.display_name}</strong>
-                  <small>{formatDate(message.created_at)}</small>
-                </header>
-                {message.text && <MarkdownRenderer content={message.text} />}
-                {message.image_url && (
-                  <img
-                    src={message.image_url}
-                    alt="Shared by learner"
-                    style={{ maxWidth: '100%', borderRadius: '0.75rem' }}
-                  />
-                )}
-                {message.audio_url && (
-                  <audio controls src={message.audio_url} />
-                )}
-              </article>
-            ))}
-            {messages.length === 0 && <p>No messages yet. Start a chat above!</p>}
-          </div>
-
-          <form className="chat-input" onSubmit={handleSendChat} style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <textarea
-                name="chat-message"
-                placeholder="Ask a question, share how the lesson felt..."
-                value={chatInput.text}
-                onChange={(event) => setChatInput((prev) => ({ ...prev, text: event.target.value }))}
-              />
-              <input
-                name="chat-image-url"
-                type="url"
-                placeholder="Optional image URL"
-                value={chatInput.image_url}
-                onChange={(event) => setChatInput((prev) => ({ ...prev, image_url: event.target.value }))}
-              />
-              <div className="chat-controls">
-                <label>
-                  <input
-                    name="chat-voice"
-                    type="checkbox"
-                    checked={chatInput.generate_voice}
-                    onChange={(event) =>
-                      setChatInput((prev) => ({ ...prev, generate_voice: event.target.checked }))
-                    }
-                  />
-                  Request playful voice reply
-                </label>
-              </div>
-            </div>
-            <button type="submit" className="primary-button" disabled={!chatSession}>
-              Send message
-            </button>
-          </form>
-        </section>
-      )}
     </div>
   );
 }
