@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o
@@ -50,6 +51,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o

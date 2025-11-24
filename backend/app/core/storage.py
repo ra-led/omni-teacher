@@ -25,6 +25,7 @@ class StorageClient:
             secure=parsed.scheme == "https",
         )
         self._bucket = settings.tts_bucket_name
+        self._public_base = settings.public_minio_endpoint
 
     def ensure_bucket(self) -> None:
         """Create the audio bucket if it does not already exist."""
@@ -48,7 +49,7 @@ class StorageClient:
             length=len(audio_bytes),
             content_type=content_type,
         )
-        return f"{settings.minio_endpoint.rstrip('/')}/{self._bucket}/{object_name}"
+        return f"{self._public_base}/{self._bucket}/{object_name}"
 
 
 storage_client = StorageClient()
