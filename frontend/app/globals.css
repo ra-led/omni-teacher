@@ -21,6 +21,8 @@ main {
 
 button {
   cursor: pointer;
+  transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease,
+    border-color 160ms ease, color 160ms ease;
 }
 
 input, textarea, select {
@@ -404,6 +406,22 @@ input, textarea, select {
   box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
 }
 
+.primary-button:hover {
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.38);
+  transform: translateY(-1px);
+}
+
+.primary-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.28);
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.35);
+  outline-offset: 2px;
+}
+
 .secondary-button {
   background: white;
   color: #4338ca;
@@ -411,6 +429,18 @@ input, textarea, select {
   border-radius: 0.75rem;
   padding: 0.65rem 1.25rem;
   font-weight: 600;
+}
+
+.secondary-button:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.18);
+}
+
+.secondary-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.14);
 }
 
 .chat-input {
