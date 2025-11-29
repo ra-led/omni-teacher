@@ -222,23 +222,46 @@ class OmniClient:
         return response.content
 
     def transcribe_audio(self, audio_bytes: bytes, *, filename: str = "speech.webm", mime_type: str = "audio/webm") -> str:
-        """Transcribe learner audio into text using the configured STT model."""
+        """Transcribe learner audio into text using the configured STT model.
 
-        try:
-            response = self._http.post(
-                "/audio/transcriptions",
-                files={"file": (filename, audio_bytes, mime_type)},
-                data={"model": self._stt_model},
-            )
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            status_code = exc.response.status_code if exc.response else None
-            raise OmniAPIError("Unable to transcribe audio", status_code=status_code) from exc
-        except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
-            raise OmniAPIError("Network error while transcribing audio") from exc
+        Falls back to Whisper if the primary STT model is rejected (e.g. unsupported
+        or not provisioned in the current account).
+        """
 
-        payload = response.json()
-        return payload.get("text", "")
+        candidate_models: list[str] = [self._stt_model]
+        if "whisper-1" not in candidate_models:
+            candidate_models.append("whisper-1")
+
+        last_error: OmniAPIError | None = None
+
+        for model_name in candidate_models:
+            try:
+                response = self._http.post(
+                    "/audio/transcriptions",
+                    files={"file": (filename, audio_bytes, mime_type)},
+                    data={"model": model_name},
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                detail = exc.response.text if exc.response else ""
+                status_code = exc.response.status_code if exc.response else None
+                message = f"Unable to transcribe audio with {model_name}"
+                if detail:
+                    message = f"{message}: {detail}"
+                last_error = OmniAPIError(message, status_code=status_code)
+                continue
+            except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+                raise OmniAPIError("Network error while transcribing audio") from exc
+
+            payload = response.json()
+            text = (payload.get("text") or "").strip()
+            if text:
+                return text
+            last_error = OmniAPIError(f"Transcription from {model_name} returned no text", status_code=response.status_code)
+
+        if last_error:
+            raise last_error
+        return ""
 
     def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
         payload: dict[str, Any] = {
