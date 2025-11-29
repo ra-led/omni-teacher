@@ -37,6 +37,7 @@ class OmniClient:
         )
         self._model = settings.omni_model
         self._voice = settings.tts_voice
+        self._stt_model = settings.stt_model
 
     def generate_diagnostic_quiz(self, *, topic: str, student_profile: dict[str, Any]) -> dict[str, Any]:
         """Create a kid-friendly diagnostic quiz for the requested topic."""
@@ -219,6 +220,25 @@ class OmniClient:
         except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
             raise OmniAPIError("Network error while synthesising speech") from exc
         return response.content
+
+    def transcribe_audio(self, audio_bytes: bytes, *, filename: str = "speech.webm", mime_type: str = "audio/webm") -> str:
+        """Transcribe learner audio into text using the configured STT model."""
+
+        try:
+            response = self._http.post(
+                "/audio/transcriptions",
+                files={"file": (filename, audio_bytes, mime_type)},
+                data={"model": self._stt_model},
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code if exc.response else None
+            raise OmniAPIError("Unable to transcribe audio", status_code=status_code) from exc
+        except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+            raise OmniAPIError("Network error while transcribing audio") from exc
+
+        payload = response.json()
+        return payload.get("text", "")
 
     def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
         payload: dict[str, Any] = {

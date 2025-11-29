@@ -268,6 +268,8 @@ export default function HomePage() {
     image_url: '',
     generate_voice: false,
   });
+  const [isRecordingVoice, setIsRecordingVoice] = React.useState(false);
+  const [isTranscribingVoice, setIsTranscribingVoice] = React.useState(false);
   const [isConnectingLessonChat, setIsConnectingLessonChat] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -275,6 +277,10 @@ export default function HomePage() {
   const [activeLessonId, setActiveLessonId] = React.useState<string | null>(null);
   const [lessonResponses, setLessonResponses] = React.useState<Record<string, string>>({});
   const [lessonSubmitting, setLessonSubmitting] = React.useState<Record<string, boolean>>({});
+
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = React.useRef<MediaStream | null>(null);
+  const recordedChunksRef = React.useRef<Blob[]>([]);
 
   const [studentForm, setStudentForm] = React.useState({
     display_name: '',
@@ -297,6 +303,86 @@ export default function HomePage() {
   const selectedLessonId = selectedLesson?.id ?? null;
   const selectedLessonTitle = selectedLesson?.title ?? '';
 
+  const stopMediaStream = React.useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+  }, []);
+
+  const transcribeVoiceNote = React.useCallback(async (blob: Blob) => {
+    setIsTranscribingVoice(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', blob, 'lesson-voice.webm');
+      const response = await fetch(`${API_BASE}/api/transcribe`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || 'Transcription request failed');
+      }
+      const data = (await response.json()) as { text?: string };
+      if (data.text) {
+        setLessonChatInput((prev) => ({
+          ...prev,
+          text: prev.text ? `${prev.text}\n${data.text}` : data.text,
+        }));
+      } else {
+        setNotice('No speech detected. Try recording again.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Unable to transcribe voice note right now. Please try again.');
+    } finally {
+      setIsTranscribingVoice(false);
+    }
+  }, []);
+
+  const handleToggleVoiceRecording = async () => {
+    if (isRecordingVoice) {
+      mediaRecorderRef.current?.stop();
+      setIsRecordingVoice(false);
+      return;
+    }
+
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setError('Voice recording is not supported in this browser.');
+      return;
+    }
+
+    try {
+      setError(null);
+      recordedChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        recordedChunksRef.current = [];
+        stopMediaStream();
+        setIsRecordingVoice(false);
+        if (blob.size > 0) {
+          void transcribeVoiceNote(blob);
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecordingVoice(true);
+    } catch (err) {
+      console.error(err);
+      setError('Unable to access microphone. Please allow access or try again.');
+      stopMediaStream();
+      setIsRecordingVoice(false);
+    }
+  };
+
   React.useEffect(() => {
     if (!selectedLessonId || (lessonChatLessonId && lessonChatLessonId !== selectedLessonId)) {
       setLessonChatSession(null);
@@ -314,6 +400,15 @@ export default function HomePage() {
       lessonChatSocket?.close();
     };
   }, [lessonChatSocket]);
+
+  React.useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      stopMediaStream();
+    };
+  }, [stopMediaStream]);
 
   React.useEffect(() => {
     if (!selectedProgram) {
@@ -1046,6 +1141,15 @@ export default function HomePage() {
                                     }
                                   />
                                   <div className="chat-controls">
+                                    <button
+                                      type="button"
+                                      className="secondary-button"
+                                      onClick={handleToggleVoiceRecording}
+                                      disabled={isTranscribingVoice}
+                                    >
+                                      {isRecordingVoice ? 'Stop recording' : '🎤 Record voice to text'}
+                                    </button>
+                                    {isTranscribingVoice && <span className="badge">Transcribing…</span>}
                                     <label>
                                       <input
                                         type="checkbox"

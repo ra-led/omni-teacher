@@ -236,3 +236,7 @@ class CreateChatSession(BaseModel):
     lesson_id: str | None = None
     title: str | None = None
     tts_enabled: bool = False
+
+
+class SpeechTranscript(BaseModel):
+    text: str

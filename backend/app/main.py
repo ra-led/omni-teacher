@@ -7,8 +7,10 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    UploadFile,
     WebSocket,
     WebSocketDisconnect,
+    File,
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +18,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from .core.config import settings
+from .core.openai_client import OmniAPIError, get_omni_client
 from .core.db import SessionLocal, engine, ensure_schema, get_db
 from .core.storage import storage_client
 from .models import Base, ChatMessage, ChatSession
@@ -35,6 +38,7 @@ from .schemas import (
     ProgramCatalogEntry,
     ProgressSnapshot,
     QuizAttemptResponse,
+    SpeechTranscript,
     StudentCreate,
     StudentResponse,
     TopicCreate,
@@ -63,6 +67,21 @@ def startup() -> None:
 @app.get("/health", tags=["meta"])
 async def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/api/transcribe", response_model=SpeechTranscript, tags=["chat"])
+async def transcribe_audio(file: UploadFile = File(...)) -> SpeechTranscript:
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty audio payload")
+    client = get_omni_client()
+    try:
+        text = client.transcribe_audio(contents, filename=file.filename or "speech.webm", mime_type=file.content_type or "audio/webm")
+    except OmniAPIError as exc:
+        message = str(exc)
+        status_code = exc.status_code or status.HTTP_502_BAD_GATEWAY
+        raise HTTPException(status_code=status_code, detail=message) from exc
+    return SpeechTranscript(text=text)
 
 
 @app.post("/api/students", response_model=StudentResponse, tags=["students"])

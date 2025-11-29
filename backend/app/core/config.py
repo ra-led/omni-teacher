@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     openai_api_base: str = "https://api.openai.com/v1"
     tts_voice: str = "alloy"
     tts_bucket_name: str = "omni-teacher-tts"
+    stt_model: str = "gpt-4o-transcribe"
     max_chat_history: int = 12
     environment: Literal["development", "production", "test"] = "development"
     cors_origins: list[str] | str | None = Field(default=None)
