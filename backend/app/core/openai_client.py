@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from typing import Any, Iterable
 
@@ -235,10 +236,12 @@ class OmniClient:
         last_error: OmniAPIError | None = None
 
         for model_name in candidate_models:
+            # Re-wrap bytes for each attempt so the multipart encoder has a fresh stream
+            file_payload = {"file": (filename, io.BytesIO(audio_bytes), mime_type)}
             try:
                 response = self._http.post(
                     "/audio/transcriptions",
-                    files={"file": (filename, audio_bytes, mime_type)},
+                    files=file_payload,
                     data={"model": model_name},
                 )
                 response.raise_for_status()
