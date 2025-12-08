@@ -321,10 +321,11 @@ export default function HomePage() {
         throw new Error(detail || 'Transcription request failed');
       }
       const data = (await response.json()) as { text?: string };
-      if (data.text) {
+      const transcript = data.text ?? '';
+      if (transcript) {
         setLessonChatInput((prev) => ({
           ...prev,
-          text: prev.text ? `${prev.text}\n${data.text}` : data.text,
+          text: prev.text ? `${prev.text}\n${transcript}` : transcript,
         }));
       } else {
         setNotice('No speech detected. Try recording again.');
@@ -410,20 +411,9 @@ export default function HomePage() {
   React.useEffect(() => {
     if (!selectedProgram) {
       setActiveLessonId(null);
-      setLessonResponses({});
       setNotice(null);
       return;
     }
-
-    setLessonResponses(() => {
-      const next: Record<string, string> = {};
-      selectedProgram.lessons.forEach((lesson) => {
-        const latestAnswers = lesson.latest_attempt?.answers ?? {};
-        const maybeResponse = (latestAnswers as Record<string, unknown>)['mastery_response'];
-        next[lesson.id] = typeof maybeResponse === 'string' ? maybeResponse : '';
-      });
-      return next;
-    });
 
     setNotice(null);
 
