@@ -107,7 +107,6 @@ class LessonResponse(BaseModel):
     progress_state: Literal["locked", "available", "completed"] = "locked"
     mastery_stars: int = 0
     latest_attempt: LessonAttemptResponse | None = None
-    submission_open: bool = False
 
     model_config = {"from_attributes": True}
 

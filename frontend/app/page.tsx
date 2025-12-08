@@ -115,7 +115,6 @@ interface LessonResponse {
   progress_state: 'locked' | 'available' | 'completed';
   mastery_stars: number;
   latest_attempt?: LessonAttemptResponse | null;
-  submission_open: boolean;
 }
 
 interface ProgramContext extends Record<string, unknown> {
@@ -275,8 +274,6 @@ export default function HomePage() {
   const [notice, setNotice] = React.useState<string | null>(null);
   const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
   const [activeLessonId, setActiveLessonId] = React.useState<string | null>(null);
-  const [lessonResponses, setLessonResponses] = React.useState<Record<string, string>>({});
-  const [lessonSubmitting, setLessonSubmitting] = React.useState<Record<string, boolean>>({});
 
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -577,55 +574,6 @@ export default function HomePage() {
       await refreshProgress(student.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to submit diagnostic quiz');
-    }
-  };
-
-  const handleLessonResponseChange = (lessonId: string, value: string) => {
-    setLessonResponses((prev) => ({ ...prev, [lessonId]: value }));
-  };
-
-  const handleSubmitLessonMastery = async (
-    lesson: LessonResponse,
-    intent: 'completed' | 'needs_help',
-  ) => {
-    if (!student) return;
-    const programId = selectedProgram?.id;
-    const responseText = (lessonResponses[lesson.id] ?? '').trim();
-    if (intent === 'completed' && responseText.length === 0) {
-      setError('Share what you learned before submitting for stars!');
-      return;
-    }
-    try {
-      setError(null);
-      setNotice(null);
-      setLessonSubmitting((prev) => ({ ...prev, [lesson.id]: true }));
-      const payload = {
-        student_id: student.id,
-        status: intent,
-        answers: {
-          mastery_response: responseText,
-          assessment_prompt: lesson.assessment?.prompt,
-        },
-      };
-      const result = await apiRequest<LessonCompletionResponse>(`/api/lessons/${lesson.id}/complete`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      const awardedStars = typeof result.attempt.stars === 'number' ? result.attempt.stars : 0;
-      const celebration =
-        result.attempt.mastery_summary ??
-        result.attempt.reflection_positive ??
-        'Lesson reflection saved!';
-      const prefix = awardedStars > 0 ? `🎉 ${renderStars(awardedStars)}` : '✅';
-      setNotice(`${prefix} ${lesson.title}: ${celebration}`);
-      if (programId) {
-        await handleSelectProgram(programId);
-      }
-      await refreshProgress(student.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to record lesson');
-    } finally {
-      setLessonSubmitting((prev) => ({ ...prev, [lesson.id]: false }));
     }
   };
 
@@ -1225,46 +1173,12 @@ export default function HomePage() {
                           </section>
                         )}
                         <section className="lesson-section">
-                          <h4>Show what you learned</h4>
-                          {selectedLesson.submission_open ? (
-                            <form
-                              onSubmit={(event) => {
-                                event.preventDefault();
-                                handleSubmitLessonMastery(selectedLesson, 'completed');
-                              }}
-                              className="lesson-mastery-form"
-                            >
-                              <textarea
-                                value={lessonResponses[selectedLesson.id] ?? ''}
-                                onChange={(event) => handleLessonResponseChange(selectedLesson.id, event.target.value)}
-                                placeholder="Tell Omni Teacher what you discovered!"
-                                disabled={!selectedLesson.unlocked || lessonSubmitting[selectedLesson.id]}
-                                required
-                              />
-                              <div className="lesson-actions">
-                                <button
-                                  type="submit"
-                                  className="primary-button"
-                                  disabled={!selectedLesson.unlocked || lessonSubmitting[selectedLesson.id]}
-                                >
-                                  {lessonSubmitting[selectedLesson.id] ? 'Checking…' : 'Submit for stars'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  onClick={() => handleSubmitLessonMastery(selectedLesson, 'needs_help')}
-                                  disabled={!selectedLesson.unlocked || lessonSubmitting[selectedLesson.id]}
-                                >
-                                  Needs help
-                                </button>
-                              </div>
-                            </form>
-                          ) : (
-                            <p style={{ margin: '8px 0', color: '#4338ca' }}>
-                              Omni Teacher will reveal the submission button once the guided lesson wraps up.
-                              Keep chatting and responding until they say you're ready!
-                            </p>
-                          )}
+                          <h4>Keep chatting to finish</h4>
+                          <p style={{ margin: '8px 0', color: '#4338ca' }}>
+                            Omni Teacher will present activities and award 1–3 stars directly in the
+                            interactive chat when the lesson wraps up. Answer their prompts and keep the
+                            conversation going until they celebrate your mastery.
+                          </p>
                         </section>
                       </>
                     )}

@@ -471,7 +471,6 @@ def serialize_program(program: LearningProgram) -> LearningProgramResponse:
                 "latest_attempt": LessonAttemptResponse.model_validate(latest_attempt)
                 if latest_attempt
                 else None,
-                "submission_open": bool(getattr(lesson, "allow_submission", False)),
             }
         )
         serialised_lessons.append(lesson_model)
@@ -578,8 +577,6 @@ def complete_lesson(
     lesson = db.get(Lesson, lesson_id)
     if not lesson:
         raise ValueError("Lesson not found")
-    if not getattr(lesson, "allow_submission", False):
-        raise ValueError("This lesson isn't ready for submissions yet. Keep working with Omni Teacher!")
     student = db.get(Student, payload.student_id)
     if not student:
         raise ValueError("Student not found")
@@ -638,6 +635,63 @@ def complete_lesson(
         mastery_summary=str(mastery_summary).strip() if mastery_summary else None,
         reflection_positive=mastery.get("positive_feedback"),
         reflection_negative=mastery.get("next_focus"),
+    )
+
+    db.add(attempt)
+    db.commit()
+    db.refresh(attempt)
+    db.refresh(attempt, attribute_names=["lesson"])
+    lesson = attempt.lesson
+    if lesson is not None:
+        db.refresh(lesson, attribute_names=["attempts", "program"])
+        if lesson.program is not None:
+            db.refresh(lesson.program, attribute_names=["lessons"])
+    return attempt
+
+
+def record_chat_mastery(
+    db: Session,
+    *,
+    lesson_id: str,
+    student_id: str,
+    stars: int,
+    summary: str | None = None,
+) -> LessonAttempt:
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise ValueError("Lesson not found")
+    student = db.get(Student, student_id)
+    if not student:
+        raise ValueError("Student not found")
+
+    program = lesson.program
+    if not program:
+        raise ValueError("Lesson is not attached to a program")
+
+    lessons_sorted = sorted(program.lessons or [], key=lambda item: item.order_index)
+    previous_mastered = True
+    for current in lessons_sorted:
+        if current.id == lesson.id:
+            if current is not lessons_sorted[0] and not previous_mastered:
+                raise ValueError("Previous lessons must be mastered before unlocking this one")
+            break
+        _, completed, _ = _lesson_mastery_stats(current)
+        previous_mastered = completed
+
+    clamped_stars = max(0, min(int(stars), 3)) if isinstance(stars, int) else 0
+    status = "completed" if clamped_stars > 0 else "needs_help"
+
+    attempt = LessonAttempt(
+        lesson_id=lesson.id,
+        student_id=student.id,
+        status=status,
+        answers={"source": "lesson_chat"},
+        teacher_notes=None,
+        score=None,
+        stars=clamped_stars,
+        mastery_summary=str(summary).strip() if summary else None,
+        reflection_positive=None,
+        reflection_negative=None,
     )
 
     db.add(attempt)

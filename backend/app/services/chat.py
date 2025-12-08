@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+import re
 from typing import Any, Iterable
 
 from sqlalchemy.orm import Session
@@ -11,7 +12,11 @@ from ..core.config import settings
 from ..core.openai_client import OmniAPIError, get_omni_client
 from ..core.storage import storage_client
 from ..models import ChatMessage, ChatSession, LearningProgram, Lesson, Student
+from ..services import programs as programs_service
 from ..schemas import ChatMessageIn
+
+
+_STAR_TOKEN = re.compile(r"\[\[LESSON_STARS:(\d)\]\]")
 
 
 def get_or_create_session(
@@ -137,8 +142,8 @@ def _system_prompt(
                 + " Then celebrate with a 1-3 star rating and a next-step tip."
             )
         prompt.append(
-            "When you decide the learner is ready to finish, end your guidance with a brief encouragement and append [[READY_FOR_STARS]] to your reply."
-            " Never mention this token aloud; it simply signals the app to reveal the submission button."
+            "When you decide the learner is ready to finish, end your guidance with a short celebration and append [[LESSON_STARS:{n}]] where {n} is 0-3 stars earned (e.g., [[LESSON_STARS:3]])."
+            " Never say this token aloud; it is only for the app to record mastery."
         )
         prompt.append(
             "Throughout the chat, alternate between presenting material, asking questions, and confirming understanding before advancing."
@@ -198,7 +203,7 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     trimmed_history = history[-settings.max_chat_history :]
     conversation = _build_conversation(session, trimmed_history)
     client = get_omni_client()
-    submission_unlocked = False
+    awarded_stars: int | None = None
     try:
         reply_text = client.chat_reply(conversation)
     except OmniAPIError:
@@ -208,9 +213,12 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
         )
 
     if session.lesson_id and reply_text:
-        if "[[READY_FOR_STARS]]" in reply_text:
-            reply_text = reply_text.replace("[[READY_FOR_STARS]]", "").strip()
-            submission_unlocked = True
+        if match := _STAR_TOKEN.search(reply_text):
+            try:
+                awarded_stars = int(match.group(1))
+            except (TypeError, ValueError):
+                awarded_stars = None
+            reply_text = _STAR_TOKEN.sub("", reply_text).strip()
 
     assistant_message = ChatMessage(
         session_id=session.id,
@@ -223,10 +231,17 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     db.commit()
     db.refresh(assistant_message)
 
-    if submission_unlocked and session.lesson:
-        session.lesson.allow_submission = True
-        db.commit()
-        db.refresh(session.lesson)
+    if awarded_stars is not None and session.lesson_id:
+        try:
+            programs_service.record_chat_mastery(
+                db,
+                lesson_id=session.lesson_id,
+                student_id=session.student_id,
+                stars=awarded_stars,
+                summary=assistant_message.text_content,
+            )
+        except ValueError:
+            pass
 
     should_voice = session.tts_enabled or voice_requested
     if should_voice and reply_text:
