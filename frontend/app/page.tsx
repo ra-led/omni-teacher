@@ -270,6 +270,8 @@ export default function HomePage() {
   const [isRecordingVoice, setIsRecordingVoice] = React.useState(false);
   const [isTranscribingVoice, setIsTranscribingVoice] = React.useState(false);
   const [isConnectingLessonChat, setIsConnectingLessonChat] = React.useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = React.useState(false);
+  const [isSubmittingDiagnostic, setIsSubmittingDiagnostic] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
@@ -466,6 +468,7 @@ export default function HomePage() {
     try {
       setError(null);
       setNotice(null);
+      setIsGeneratingQuiz(true);
       const payload = {
         topic: topicForm.topic.trim(),
         learning_goal: topicForm.learning_goal.trim() || undefined,
@@ -486,6 +489,8 @@ export default function HomePage() {
       setTopicForm({ topic: '', learning_goal: '', traits: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add topic');
+    } finally {
+      setIsGeneratingQuiz(false);
     }
   };
 
@@ -549,6 +554,7 @@ export default function HomePage() {
     try {
       setError(null);
       setNotice(null);
+      setIsSubmittingDiagnostic(true);
       const payload = {
         answers: quizResponses,
       };
@@ -564,6 +570,8 @@ export default function HomePage() {
       await refreshProgress(student.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to submit diagnostic quiz');
+    } finally {
+      setIsSubmittingDiagnostic(false);
     }
   };
 
@@ -795,8 +803,9 @@ export default function HomePage() {
               />
             </label>
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <button type="submit" className="primary-button">
-                Generate diagnostic quiz
+              <button type="submit" className="primary-button" disabled={isGeneratingQuiz}>
+                {isGeneratingQuiz ? 'Generating diagnostic quiz...' : 'Generate diagnostic quiz'}
+                {isGeneratingQuiz && <span className="button-spinner" aria-hidden="true" />}
               </button>
             </div>
           </form>
@@ -933,8 +942,9 @@ export default function HomePage() {
                   </article>
                 ))}
               </div>
-              <button type="submit" className="primary-button">
-                Submit answers
+              <button type="submit" className="primary-button" disabled={isSubmittingDiagnostic}>
+                {isSubmittingDiagnostic ? 'Submitting answers...' : 'Submit answers'}
+                {isSubmittingDiagnostic && <span className="button-spinner" aria-hidden="true" />}
               </button>
             </form>
           )}
