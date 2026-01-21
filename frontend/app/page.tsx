@@ -276,6 +276,7 @@ export default function HomePage() {
   const [notice, setNotice] = React.useState<string | null>(null);
   const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
   const [activeLessonId, setActiveLessonId] = React.useState<string | null>(null);
+  const [showLessonChatModal, setShowLessonChatModal] = React.useState(false);
 
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -603,6 +604,11 @@ export default function HomePage() {
     } finally {
       setIsConnectingLessonChat(false);
     }
+  };
+
+  const handleStartLessonChat = (lesson: LessonResponse, ttsEnabled: boolean) => {
+    setShowLessonChatModal(true);
+    void handleLaunchLessonChat(lesson, ttsEnabled);
   };
 
   React.useEffect(() => {
@@ -1018,27 +1024,27 @@ export default function HomePage() {
                           <h4>Lesson story</h4>
                           <MarkdownRenderer content={selectedLesson.content_markdown} />
                         </section>
-                        <section className="lesson-section">
-                          <h4>Interactive lesson</h4>
-                          {lessonChatLessonId !== selectedLesson.id ? (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                              <button
-                                type="button"
-                                className="primary-button"
-                                onClick={() => handleLaunchLessonChat(selectedLesson, false)}
-                                disabled={isConnectingLessonChat}
-                              >
-                                {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                onClick={() => handleLaunchLessonChat(selectedLesson, true)}
-                                disabled={isConnectingLessonChat}
-                              >
-                                {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
-                              </button>
-                            </div>
+                      <section className="lesson-section">
+                        <h4>Interactive lesson</h4>
+                        {lessonChatLessonId !== selectedLesson.id ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <button
+                              type="button"
+                              className="primary-button"
+                              onClick={() => handleStartLessonChat(selectedLesson, false)}
+                              disabled={isConnectingLessonChat}
+                            >
+                              {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => handleStartLessonChat(selectedLesson, true)}
+                              disabled={isConnectingLessonChat}
+                            >
+                              {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
+                            </button>
+                          </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <div className="chat-thread">
@@ -1116,17 +1122,6 @@ export default function HomePage() {
                             </div>
                           )}
                         </section>
-                        <section className="lesson-section">
-                          <h4>Practice ideas</h4>
-                          <ul className="practice-list">
-                            {selectedLesson.practice_prompts.map((prompt) => (
-                              <li key={prompt.prompt}>
-                                <span>{prompt.prompt}</span>
-                                {prompt.modality && <small> · {prompt.modality}</small>}
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
                         {selectedLesson.resources && selectedLesson.resources.length > 0 && (
                           <section className="lesson-section">
                             <h4>Helpful resources</h4>
@@ -1150,32 +1145,6 @@ export default function HomePage() {
                             </ul>
                           </section>
                         )}
-                        {selectedLesson.assessment && (
-                          <section className="lesson-section">
-                            <h4>Mastery check prompt</h4>
-                            <p>{selectedLesson.assessment.prompt}</p>
-                            {selectedLesson.assessment.success_criteria && (
-                              <ul>
-                                {selectedLesson.assessment.success_criteria.map((criteria) => (
-                                  <li key={criteria}>{criteria}</li>
-                                ))}
-                              </ul>
-                            )}
-                            {selectedLesson.assessment.extension_idea && (
-                              <p style={{ color: '#4338ca' }}>
-                                Try next: {selectedLesson.assessment.extension_idea}
-                              </p>
-                            )}
-                          </section>
-                        )}
-                        <section className="lesson-section">
-                          <h4>Keep chatting to finish</h4>
-                          <p style={{ margin: '8px 0', color: '#4338ca' }}>
-                            Omni Teacher will present activities and award 1–3 stars directly in the
-                            interactive chat when the lesson wraps up. Answer their prompts and keep the
-                            conversation going until they celebrate your mastery.
-                          </p>
-                        </section>
                       </>
                     )}
                     {selectedLesson.latest_attempt && (
@@ -1203,6 +1172,27 @@ export default function HomePage() {
                   <p>Select an unlocked lesson to view the plan.</p>
                 )}
               </article>
+            </div>
+          )}
+          {showLessonChatModal && selectedLesson && selectedLesson.unlocked && (
+            <div className="modal-overlay" role="dialog" aria-modal="true">
+              <div className="modal-card">
+                <h4>Keep chatting to finish</h4>
+                <p style={{ margin: '0.5rem 0 1rem', color: '#4338ca' }}>
+                  Omni Teacher will present activities and award 1–3 stars directly in the interactive chat
+                  when the lesson wraps up. Answer their prompts and keep the conversation going until
+                  they celebrate your mastery.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setShowLessonChatModal(false)}
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </section>
