@@ -267,6 +267,7 @@ export default function HomePage() {
     image_url: '',
     generate_voice: false,
   });
+  const [isTeacherTyping, setIsTeacherTyping] = React.useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = React.useState(false);
   const [isTranscribingVoice, setIsTranscribingVoice] = React.useState(false);
   const [isConnectingLessonChat, setIsConnectingLessonChat] = React.useState(false);
@@ -281,6 +282,7 @@ export default function HomePage() {
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
   const recordedChunksRef = React.useRef<Blob[]>([]);
+  const lessonChatThreadRef = React.useRef<HTMLDivElement | null>(null);
 
   const [studentForm, setStudentForm] = React.useState({
     display_name: '',
@@ -301,7 +303,6 @@ export default function HomePage() {
     return selectedProgram.lessons.find((lesson) => lesson.id === activeLessonId) ?? null;
   }, [selectedProgram, activeLessonId]);
   const selectedLessonId = selectedLesson?.id ?? null;
-  const selectedLessonTitle = selectedLesson?.title ?? '';
 
   const stopMediaStream = React.useCallback(() => {
     if (mediaStreamRef.current) {
@@ -614,6 +615,7 @@ export default function HomePage() {
   React.useEffect(() => {
     if (!lessonChatSession || !student || !lessonChatLessonId) {
       setLessonChatMessages([]);
+      setIsTeacherTyping(false);
       setLessonChatSocket((prev) => {
         prev?.close();
         return null;
@@ -631,26 +633,34 @@ export default function HomePage() {
 
     const socket = new WebSocket(url);
     setLessonChatSocket(socket);
-    let introSent = false;
 
     socket.onopen = () => {
-      if (!introSent && selectedLessonTitle) {
-        socket.send(
-          JSON.stringify({
-            content_type: 'text',
-            text: `Hi Omni Teacher! I'm ready to explore "${selectedLessonTitle}". Please present the material in steps and check my understanding along the way.`,
-          }),
-        );
-        introSent = true;
-      }
+      setIsTeacherTyping(true);
     };
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data) as ChatSocketEvent;
       if (data.type === 'history') {
         setLessonChatMessages(data.messages);
+        setIsTeacherTyping(false);
       } else if (data.type === 'student_message' || data.type === 'assistant_message') {
-        setLessonChatMessages((prev) => [...prev, data.message]);
+        setLessonChatMessages((prev) => {
+          if (data.type === 'student_message' && prev.length > 0) {
+            const last = prev[prev.length - 1];
+            if (
+              last.sender === 'student' &&
+              last.id.startsWith('optimistic-') &&
+              last.text === data.message.text &&
+              last.image_url === data.message.image_url
+            ) {
+              return [...prev.slice(0, -1), data.message];
+            }
+          }
+          return [...prev, data.message];
+        });
+        if (data.type === 'assistant_message') {
+          setIsTeacherTyping(false);
+        }
         if (data.type === 'assistant_message' && selectedProgram) {
           handleSelectProgram(selectedProgram.id);
         }
@@ -659,10 +669,12 @@ export default function HomePage() {
 
     socket.onerror = () => {
       setError('Lesson chat connection failed');
+      setIsTeacherTyping(false);
     };
 
     socket.onclose = () => {
       setLessonChatSocket(null);
+      setIsTeacherTyping(false);
     };
 
     return () => {
@@ -674,7 +686,6 @@ export default function HomePage() {
     selectedProgram?.id,
     lessonChatLessonId,
     selectedLessonId,
-    selectedLessonTitle,
   ]);
 
   const handleSendLessonChat = (event: React.FormEvent<HTMLFormElement>) => {
@@ -694,11 +705,29 @@ export default function HomePage() {
       image_url: lessonChatInput.image_url || undefined,
       generate_voice: lessonChatInput.generate_voice || lessonChatSession?.tts_enabled || false,
     };
+    const optimisticMessage: ChatMessageOut = {
+      id: `optimistic-${crypto.randomUUID()}`,
+      sender: 'student',
+      content_type: payload.content_type,
+      text: payload.text,
+      image_url: payload.image_url,
+      render_formats: [],
+      created_at: new Date().toISOString(),
+    };
+    setLessonChatMessages((prev) => [...prev, optimisticMessage]);
+    setIsTeacherTyping(true);
     lessonChatSocket.send(
       JSON.stringify(payload),
     );
     setLessonChatInput({ text: '', image_url: '', generate_voice: lessonChatSession?.tts_enabled ?? false });
   };
+
+  React.useEffect(() => {
+    if (!lessonChatThreadRef.current) {
+      return;
+    }
+    lessonChatThreadRef.current.scrollTop = lessonChatThreadRef.current.scrollHeight;
+  }, [lessonChatMessages, isTeacherTyping]);
 
   return (
     <div style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -1047,7 +1076,7 @@ export default function HomePage() {
                           </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                              <div className="chat-thread">
+                              <div className="chat-thread" ref={lessonChatThreadRef}>
                                 {lessonChatMessages.map((message) => (
                                   <article key={message.id} className={`chat-message ${message.sender}`}>
                                     <header style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1067,10 +1096,18 @@ export default function HomePage() {
                                     {message.audio_url && <audio controls src={message.audio_url} />}
                                   </article>
                                 ))}
-                                {lessonChatMessages.length === 0 && (
+                                {lessonChatMessages.length === 0 && !isTeacherTyping && (
                                   <p style={{ margin: 0 }}>
                                     Waiting for Omni Teacher to introduce the lesson. Share how you feel to begin!
                                   </p>
+                                )}
+                                {isTeacherTyping && (
+                                  <div className="chat-typing">
+                                    <span className="typing-dot" />
+                                    <span className="typing-dot" />
+                                    <span className="typing-dot" />
+                                    <span>Waiting for teacher response…</span>
+                                  </div>
                                 )}
                               </div>
                               <form className="chat-input" onSubmit={handleSendLessonChat}>
