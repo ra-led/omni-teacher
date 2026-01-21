@@ -847,10 +847,6 @@ export default function HomePage() {
           <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <h2>{selectedProgram.title}</h2>
             <div className="progress-pills">
-              <span className="progress-pill">Status: {selectedProgram.status}</span>
-              {selectedProgram.skill_profile && (
-                <span className="progress-pill">Skill focus: {selectedProgram.skill_profile}</span>
-              )}
               {selectedProgram.total_mastery_stars > 0 && (
                 <span className="progress-pill">Stars earned: {selectedProgram.total_mastery_stars}</span>
               )}
