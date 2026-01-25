@@ -278,6 +278,7 @@ export default function HomePage() {
   const [quizResponses, setQuizResponses] = React.useState<Record<string, string | string[]>>({});
   const [activeLessonId, setActiveLessonId] = React.useState<string | null>(null);
   const [showLessonChatModal, setShowLessonChatModal] = React.useState(false);
+  const lessonIntroMessageRef = React.useRef<string | null>(null);
 
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -583,6 +584,7 @@ export default function HomePage() {
       setError(null);
       setIsConnectingLessonChat(true);
       setLessonChatMessages([]);
+      lessonIntroMessageRef.current = `Please start the lesson about "${lesson.title}" now and guide me through the activities.`;
       setLessonChatSocket((prev) => {
         prev?.close();
         return null;
@@ -616,6 +618,7 @@ export default function HomePage() {
     if (!lessonChatSession || !student || !lessonChatLessonId) {
       setLessonChatMessages([]);
       setIsTeacherTyping(false);
+      lessonIntroMessageRef.current = null;
       setLessonChatSocket((prev) => {
         prev?.close();
         return null;
@@ -636,6 +639,15 @@ export default function HomePage() {
 
     socket.onopen = () => {
       setIsTeacherTyping(true);
+      const introMessage = lessonIntroMessageRef.current;
+      if (introMessage) {
+        socket.send(
+          JSON.stringify({
+            content_type: 'text',
+            text: introMessage,
+          }),
+        );
+      }
     };
 
     socket.onmessage = (event) => {
@@ -655,6 +667,9 @@ export default function HomePage() {
             ) {
               return [...prev.slice(0, -1), data.message];
             }
+          }
+          if (data.type === 'student_message' && data.message.text === lessonIntroMessageRef.current) {
+            return prev;
           }
           return [...prev, data.message];
         });
@@ -1098,7 +1113,7 @@ export default function HomePage() {
                                 ))}
                                 {lessonChatMessages.length === 0 && !isTeacherTyping && (
                                   <p style={{ margin: 0 }}>
-                                    Waiting for Omni Teacher to introduce the lesson. Share how you feel to begin!
+                                    Waiting for Omni Teacher to introduce the lesson.
                                   </p>
                                 )}
                                 {isTeacherTyping && (
@@ -1106,7 +1121,7 @@ export default function HomePage() {
                                     <span className="typing-dot" />
                                     <span className="typing-dot" />
                                     <span className="typing-dot" />
-                                    <span>Waiting for teacher response…</span>
+                                    <span>Waiting for Omni Teacher to introduce the lesson.</span>
                                   </div>
                                 )}
                               </div>
