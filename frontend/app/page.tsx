@@ -304,6 +304,13 @@ export default function HomePage() {
     return selectedProgram.lessons.find((lesson) => lesson.id === activeLessonId) ?? null;
   }, [selectedProgram, activeLessonId]);
   const selectedLessonId = selectedLesson?.id ?? null;
+  const nextLesson = React.useMemo(() => {
+    if (!selectedProgram || !selectedLesson) return null;
+    const sorted = [...selectedProgram.lessons].sort((a, b) => a.order_index - b.order_index);
+    const currentIndex = sorted.findIndex((lesson) => lesson.id === selectedLesson.id);
+    if (currentIndex < 0) return null;
+    return sorted.slice(currentIndex + 1).find((lesson) => lesson.unlocked) ?? null;
+  }, [selectedProgram, selectedLesson]);
 
   const stopMediaStream = React.useCallback(() => {
     if (mediaStreamRef.current) {
@@ -1124,6 +1131,24 @@ export default function HomePage() {
                                     <span>Waiting for Omni Teacher to introduce the lesson.</span>
                                   </div>
                                 )}
+                                {selectedLesson.latest_attempt?.stars &&
+                                  selectedLesson.progress_state === 'completed' &&
+                                  nextLesson && (
+                                    <article className="chat-message assistant">
+                                      <header style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <strong>Omni Teacher</strong>
+                                        <small>{formatDate(selectedLesson.latest_attempt.created_at)}</small>
+                                      </header>
+                                      <p>Lesson complete! Ready to keep going?</p>
+                                      <button
+                                        type="button"
+                                        className="primary-button"
+                                        onClick={() => setActiveLessonId(nextLesson.id)}
+                                      >
+                                        Next lesson
+                                      </button>
+                                    </article>
+                                  )}
                               </div>
                               <form className="chat-input" onSubmit={handleSendLessonChat}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
