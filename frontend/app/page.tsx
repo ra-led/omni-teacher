@@ -255,6 +255,7 @@ function formatDiagnosticNotes(notes: unknown): string | null {
 
 export default function HomePage() {
   const [student, setStudent] = React.useState<StudentResponse | null>(null);
+  const [students, setStudents] = React.useState<StudentResponse[]>([]);
   const [catalog, setCatalog] = React.useState<ProgramCatalogEntry[]>([]);
   const [selectedProgram, setSelectedProgram] = React.useState<LearningProgramResponse | null>(null);
   const [progress, setProgress] = React.useState<ProgressSnapshot | null>(null);
@@ -279,6 +280,7 @@ export default function HomePage() {
   const [activeLessonId, setActiveLessonId] = React.useState<string | null>(null);
   const [showLessonChatModal, setShowLessonChatModal] = React.useState(false);
   const lessonIntroMessageRef = React.useRef<string | null>(null);
+  const [showStudentModal, setShowStudentModal] = React.useState(false);
 
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -438,6 +440,11 @@ export default function HomePage() {
     });
   }, [selectedProgram?.id]);
 
+  const refreshStudents = React.useCallback(async () => {
+    const result = await apiRequest<StudentResponse[]>('/api/students');
+    setStudents(result);
+  }, []);
+
   const refreshCatalog = React.useCallback(async (studentId: string) => {
     const result = await apiRequest<ProgramCatalogEntry[]>(`/api/students/${studentId}/catalog`);
     setCatalog(result);
@@ -447,6 +454,27 @@ export default function HomePage() {
     const result = await apiRequest<ProgressSnapshot>(`/api/students/${studentId}/progress`);
     setProgress(result);
   }, []);
+
+  React.useEffect(() => {
+    void refreshStudents();
+  }, [refreshStudents]);
+
+  const handleSelectStudent = async (learner: StudentResponse) => {
+    setStudent(learner);
+    setSelectedProgram(null);
+    setActiveLessonId(null);
+    setLessonChatSession(null);
+    setLessonChatLessonId(null);
+    setLessonChatMessages([]);
+    setLessonChatSocket((prev) => {
+      prev?.close();
+      return null;
+    });
+    setError(null);
+    setNotice(null);
+    await refreshCatalog(learner.id);
+    await refreshProgress(learner.id);
+  };
 
   const handleRegisterStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -463,10 +491,10 @@ export default function HomePage() {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      setStudent(created);
-      setSelectedProgram(null);
-      await refreshCatalog(created.id);
-      await refreshProgress(created.id);
+      await refreshStudents();
+      setStudentForm({ display_name: '', age: '', grade: '' });
+      setShowStudentModal(false);
+      await handleSelectStudent(created);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to register student');
     }
@@ -773,57 +801,102 @@ export default function HomePage() {
       )}
 
       <section className="form-section">
-        <h2>Create or Load a Learner Profile</h2>
-        <form className="form-grid two" onSubmit={handleRegisterStudent}>
-          <label>
-            Learner name
-            <input
-              name="learner-name"
-              required
-              value={studentForm.display_name}
-              onChange={(event) =>
-                setStudentForm((prev) => ({ ...prev, display_name: event.target.value }))
-              }
-              placeholder="Avery, Jordan, ..."
-            />
-          </label>
-          <label>
-            Age
-            <input
-              name="learner-age"
-              type="number"
-              min={5}
-              max={16}
-              value={studentForm.age}
-              onChange={(event) =>
-                setStudentForm((prev) => ({ ...prev, age: event.target.value }))
-              }
-              placeholder="10"
-            />
-          </label>
-          <label>
-            Grade
-            <input
-              name="learner-grade"
-              value={studentForm.grade}
-              onChange={(event) =>
-                setStudentForm((prev) => ({ ...prev, grade: event.target.value }))
-              }
-              placeholder="4th"
-            />
-          </label>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start' }}>
-            <button type="submit" className="primary-button">
-              Save learner
+        <h2>Learner Profiles</h2>
+        <div className="student-grid">
+          {students.map((learner) => (
+            <button
+              key={learner.id}
+              type="button"
+              className={`student-card${student?.id === learner.id ? ' student-card--active' : ''}`}
+              onClick={() => handleSelectStudent(learner)}
+            >
+              <div className="student-card-header">
+                <strong>{learner.display_name}</strong>
+                {learner.grade && <span className="badge">{learner.grade}</span>}
+              </div>
+              <div className="student-card-meta">
+                {learner.age ? <span>Age {learner.age}</span> : <span>Age not set</span>}
+                <small>{learner.id}</small>
+              </div>
             </button>
-          </div>
-        </form>
+          ))}
+          <button
+            type="button"
+            className="student-card student-card--new"
+            onClick={() => {
+              setStudentForm({ display_name: '', age: '', grade: '' });
+              setShowStudentModal(true);
+            }}
+          >
+            <span className="student-card-plus">＋</span>
+            <strong>New learner</strong>
+            <span>Create a new profile</span>
+          </button>
+        </div>
         {student && (
           <p style={{ marginTop: '1rem', color: '#1e293b' }}>
             Active learner <strong>{student.display_name}</strong> (ID: {student.id})
           </p>
         )}
       </section>
+      {showStudentModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3 style={{ marginTop: 0 }}>Create a new learner</h3>
+            <form className="form-grid two" onSubmit={handleRegisterStudent}>
+              <label>
+                Learner name
+                <input
+                  name="learner-name"
+                  required
+                  value={studentForm.display_name}
+                  onChange={(event) =>
+                    setStudentForm((prev) => ({ ...prev, display_name: event.target.value }))
+                  }
+                  placeholder="Avery, Jordan, ..."
+                />
+              </label>
+              <label>
+                Age
+                <input
+                  name="learner-age"
+                  type="number"
+                  min={5}
+                  max={16}
+                  value={studentForm.age}
+                  onChange={(event) =>
+                    setStudentForm((prev) => ({ ...prev, age: event.target.value }))
+                  }
+                  placeholder="10"
+                />
+              </label>
+              <label>
+                Grade
+                <input
+                  name="learner-grade"
+                  value={studentForm.grade}
+                  onChange={(event) =>
+                    setStudentForm((prev) => ({ ...prev, grade: event.target.value }))
+                  }
+                  placeholder="4th"
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                <button type="submit" className="primary-button">
+                  Save learner
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setShowStudentModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {student && (
         <section className="form-section">

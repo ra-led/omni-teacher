@@ -90,6 +90,12 @@ def register_student(payload: StudentCreate, db: Session = Depends(get_db)) -> S
     return StudentResponse.model_validate(student)
 
 
+@app.get("/api/students", response_model=list[StudentResponse], tags=["students"])
+def list_students(db: Session = Depends(get_db)) -> list[StudentResponse]:
+    students = programs_service.list_students(db)
+    return [StudentResponse.model_validate(student) for student in students]
+
+
 @app.get(
     "/api/students/{student_id}/catalog",
     response_model=list[ProgramCatalogEntry],

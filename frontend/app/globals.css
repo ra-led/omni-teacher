@@ -397,6 +397,71 @@ input, textarea, select {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.student-card {
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #fff;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  color: inherit;
+}
+
+.student-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.18);
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.student-card--active {
+  border-color: #6366f1;
+  box-shadow: 0 16px 36px rgba(99, 102, 241, 0.24);
+}
+
+.student-card--new {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #4338ca;
+  background: rgba(238, 242, 255, 0.7);
+}
+
+.student-card-plus {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.student-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.student-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.student-card-meta small {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
 .primary-button {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;

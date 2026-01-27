@@ -375,6 +375,10 @@ def create_student(db: Session, payload: StudentCreate) -> Student:
     return student
 
 
+def list_students(db: Session) -> list[Student]:
+    return db.query(Student).order_by(Student.created_at.desc()).all()
+
+
 def list_catalog(db: Session, student_id: str) -> list[ProgramCatalogEntry]:
     programs = (
         db.query(LearningProgram)
