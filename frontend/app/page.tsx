@@ -961,6 +961,18 @@ export default function HomePage() {
             </button>
           </header>
           <div className="catalog-grid">
+            <button
+              type="button"
+              className="catalog-card catalog-card--new"
+              onClick={() => {
+                setTopicForm({ topic: '', learning_goal: '', traits: '' });
+                setShowTopicModal(true);
+              }}
+            >
+              <span className="student-card-plus">＋</span>
+              <strong>New topic</strong>
+              <span>Create a learning adventure</span>
+            </button>
             {catalog.map((entry) => (
               <article key={entry.id} className="catalog-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -977,18 +989,6 @@ export default function HomePage() {
                 </button>
               </article>
             ))}
-            <button
-              type="button"
-              className="catalog-card catalog-card--new"
-              onClick={() => {
-                setTopicForm({ topic: '', learning_goal: '', traits: '' });
-                setShowTopicModal(true);
-              }}
-            >
-              <span className="student-card-plus">＋</span>
-              <strong>New topic</strong>
-              <span>Create a learning adventure</span>
-            </button>
             {catalog.length === 0 && <p>No programs yet. Add a topic to get started!</p>}
           </div>
         </section>
