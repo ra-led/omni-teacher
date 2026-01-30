@@ -298,6 +298,7 @@ export default function HomePage() {
     learning_goal: '',
     traits: '',
   });
+  const [showTopicModal, setShowTopicModal] = React.useState(false);
 
   const diagnosticNotes = formatDiagnosticNotes(selectedProgram?.context?.diagnostic_notes);
 
@@ -525,6 +526,7 @@ export default function HomePage() {
       setSelectedProgram(program);
       await refreshCatalog(student.id);
       setTopicForm({ topic: '', learning_goal: '', traits: '' });
+      setShowTopicModal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add topic');
     } finally {
@@ -897,49 +899,57 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
-      {student && (
-        <section className="form-section">
-          <h2>Generate a New Learning Program</h2>
-          <form className="form-grid" onSubmit={handleAddTopic}>
-            <label>
-              Topic idea from learner
-              <input
-                name="topic"
-                required
-                value={topicForm.topic}
-                onChange={(event) => setTopicForm((prev) => ({ ...prev, topic: event.target.value }))}
-                placeholder="Ancient Egypt, Fractions, Space robots..."
-              />
-            </label>
-            <label>
-              Learning goal (optional)
-              <input
-                name="learning-goal"
-                value={topicForm.learning_goal}
-                onChange={(event) =>
-                  setTopicForm((prev) => ({ ...prev, learning_goal: event.target.value }))
-                }
-                placeholder="Feel confident explaining pyramids"
-              />
-            </label>
-            <label>
-              Learner traits (comma separated)
-              <input
-                name="learner-traits"
-                value={topicForm.traits}
-                onChange={(event) => setTopicForm((prev) => ({ ...prev, traits: event.target.value }))}
-                placeholder="visual, loves drawing, curious"
-              />
-            </label>
-            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <button type="submit" className="primary-button" disabled={isGeneratingQuiz}>
-                {isGeneratingQuiz ? 'Generating diagnostic quiz...' : 'Generate diagnostic quiz'}
-                {isGeneratingQuiz && <span className="button-spinner" aria-hidden="true" />}
-              </button>
-            </div>
-          </form>
-        </section>
+      {showTopicModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3 style={{ marginTop: 0 }}>Create a new learning adventure</h3>
+            <form className="form-grid" onSubmit={handleAddTopic}>
+              <label>
+                Topic idea from learner
+                <input
+                  name="topic"
+                  required
+                  value={topicForm.topic}
+                  onChange={(event) => setTopicForm((prev) => ({ ...prev, topic: event.target.value }))}
+                  placeholder="Ancient Egypt, Fractions, Space robots..."
+                />
+              </label>
+              <label>
+                Learning goal (optional)
+                <input
+                  name="learning-goal"
+                  value={topicForm.learning_goal}
+                  onChange={(event) =>
+                    setTopicForm((prev) => ({ ...prev, learning_goal: event.target.value }))
+                  }
+                  placeholder="Feel confident explaining pyramids"
+                />
+              </label>
+              <label>
+                Learner traits (comma separated)
+                <input
+                  name="learner-traits"
+                  value={topicForm.traits}
+                  onChange={(event) => setTopicForm((prev) => ({ ...prev, traits: event.target.value }))}
+                  placeholder="visual, loves drawing, curious"
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                <button type="submit" className="primary-button" disabled={isGeneratingQuiz}>
+                  {isGeneratingQuiz ? 'Generating diagnostic quiz...' : 'Generate diagnostic quiz'}
+                  {isGeneratingQuiz && <span className="button-spinner" aria-hidden="true" />}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setShowTopicModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {student && (
@@ -967,6 +977,18 @@ export default function HomePage() {
                 </button>
               </article>
             ))}
+            <button
+              type="button"
+              className="catalog-card catalog-card--new"
+              onClick={() => {
+                setTopicForm({ topic: '', learning_goal: '', traits: '' });
+                setShowTopicModal(true);
+              }}
+            >
+              <span className="student-card-plus">＋</span>
+              <strong>New topic</strong>
+              <span>Create a learning adventure</span>
+            </button>
             {catalog.length === 0 && <p>No programs yet. Add a topic to get started!</p>}
           </div>
         </section>

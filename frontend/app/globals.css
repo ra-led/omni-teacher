@@ -96,6 +96,15 @@ input, textarea, select {
   box-shadow: 0 20px 40px rgba(79, 70, 229, 0.16);
 }
 
+.catalog-card--new {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #4338ca;
+  background: rgba(238, 242, 255, 0.7);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
