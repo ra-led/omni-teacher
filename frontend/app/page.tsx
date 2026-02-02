@@ -1097,9 +1097,7 @@ export default function HomePage() {
             </form>
           )}
 
-          {selectedProgram.lessons.length === 0 ? (
-            <p style={{ margin: 0 }}>Lessons are being prepared. Check back soon!</p>
-          ) : (
+          {selectedProgram.lessons.length === 0 ? null : (
             <div className="lesson-layout">
               <aside className="lesson-list">
                 {selectedProgram.lessons.map((lesson) => {
