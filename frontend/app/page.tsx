@@ -314,6 +314,10 @@ export default function HomePage() {
     if (currentIndex < 0) return null;
     return sorted.slice(currentIndex + 1).find((lesson) => lesson.unlocked) ?? null;
   }, [selectedProgram, selectedLesson]);
+  const hasTeacherMessage = React.useMemo(
+    () => lessonChatMessages.some((message) => message.sender === 'assistant'),
+    [lessonChatMessages],
+  );
 
   const stopMediaStream = React.useCallback(() => {
     if (mediaStreamRef.current) {
@@ -1221,7 +1225,11 @@ export default function HomePage() {
                                     <span className="typing-dot" />
                                     <span className="typing-dot" />
                                     <span className="typing-dot" />
-                                    <span>Waiting for Omni Teacher to introduce the lesson.</span>
+                                    <span>
+                                      {hasTeacherMessage
+                                        ? 'Omni Teacher is typing…'
+                                        : 'Waiting for Omni Teacher to introduce the lesson.'}
+                                    </span>
                                   </div>
                                 )}
                                 {selectedLesson.latest_attempt?.stars &&
