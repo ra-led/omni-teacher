@@ -250,18 +250,7 @@ input, textarea, select {
 }
 
 
-.program-focus {
-  margin: 0;
-  color: #4c1d95;
-  font-weight: 600;
-}
 
-.lesson-detail-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
 
 .lesson-header-actions {
   display: flex;
@@ -269,17 +258,7 @@ input, textarea, select {
   gap: 0.65rem;
   justify-content: flex-end;
 }
-.lesson-detail-header h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.6rem;
-  color: #1e293b;
-}
 
-.lesson-detail-meta {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 
 .lesson-locked-banner {
   background: rgba(239, 68, 68, 0.12);
@@ -300,11 +279,6 @@ input, textarea, select {
   gap: 0.35rem;
 }
 
-.lesson-detail-subtitle {
-  margin: 0.35rem 0 0;
-  color: #475569;
-  font-size: 0.95rem;
-}
 
 .lesson-details-toggle {
   border-top: 1px solid rgba(148, 163, 184, 0.35);

@@ -1088,19 +1088,18 @@ export default function HomePage() {
       )}
 
       {selectedProgram && (activeMode === 'programs' || activeMode === 'lesson') && (
-        <section className="form-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <h2>{selectedProgram.title}</h2>
-            {selectedProgram.skill_profile && (
-              <p className="program-focus">Focus: {selectedProgram.skill_profile}</p>
-            )}
-            {selectedProgram.summary && <p>{selectedProgram.summary}</p>}
-            {diagnosticNotes && (
-              <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}>
-                {diagnosticNotes}
-              </div>
-            )}
-          </header>
+        <section className="form-section" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {activeMode === 'programs' && (
+            <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <h2>{selectedProgram.title}</h2>
+              {selectedProgram.summary && <p>{selectedProgram.summary}</p>}
+              {diagnosticNotes && (
+                <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}>
+                  {diagnosticNotes}
+                </div>
+              )}
+            </header>
+          )}
 
           {activeMode === 'programs' && selectedProgram.status === 'awaiting_diagnostic' && selectedProgram.quiz && (
             <form
@@ -1239,39 +1238,6 @@ export default function HomePage() {
               <article className="lesson-detail">
                 {selectedLesson ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <header className="lesson-detail-header">
-                      <div>
-                        <h3>{selectedLesson.title}</h3>
-                        <div className="lesson-detail-meta">
-                          <span className="badge">{selectedLesson.progress_state}</span>
-                          <span className="badge">{renderStars(selectedLesson.mastery_stars)}</span>
-                          {typeof selectedLesson.estimated_minutes === 'number' && (
-                            <span className="badge">~{selectedLesson.estimated_minutes} min</span>
-                          )}
-                        </div>
-                        <p className="lesson-detail-subtitle">Chat-first lesson workspace</p>
-                      </div>
-                      {selectedLesson.unlocked && lessonChatLessonId !== selectedLesson.id && (
-                        <div className="lesson-header-actions">
-                          <button
-                            type="button"
-                            className="primary-button"
-                            onClick={() => handleStartLessonChat(selectedLesson, false)}
-                            disabled={isConnectingLessonChat}
-                          >
-                            {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => handleStartLessonChat(selectedLesson, true)}
-                            disabled={isConnectingLessonChat}
-                          >
-                            {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
-                          </button>
-                        </div>
-                      )}
-                    </header>
                     {!selectedLesson.unlocked ? (
                       <div className="lesson-locked-banner">
                         Complete the previous lesson to unlock this adventure.
@@ -1279,10 +1245,26 @@ export default function HomePage() {
                     ) : (
                       <>
                         <section className="lesson-section lesson-section--compact">
-                          <h4>Interactive lesson</h4>
-                          <p style={{ margin: 0, color: '#475569' }}>
-                            Start or continue the guided chat below.
-                          </p>
+                        {lessonChatLessonId !== selectedLesson.id && (
+                          <div className="lesson-header-actions" style={{ justifyContent: 'flex-start' }}>
+                            <button
+                              type="button"
+                              className="primary-button"
+                              onClick={() => handleStartLessonChat(selectedLesson, false)}
+                              disabled={isConnectingLessonChat}
+                            >
+                              {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => handleStartLessonChat(selectedLesson, true)}
+                              disabled={isConnectingLessonChat}
+                            >
+                              {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
+                            </button>
+                          </div>
+                        )}
                         {lessonChatLessonId === selectedLesson.id && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <div className="chat-thread" ref={lessonChatThreadRef}>
