@@ -1251,6 +1251,7 @@ export default function HomePage() {
                             <span className="badge">~{selectedLesson.estimated_minutes} min</span>
                           )}
                         </div>
+                        <p className="lesson-detail-subtitle">Chat-first lesson workspace</p>
                       </div>
                     </header>
                     {!selectedLesson.unlocked ? (
@@ -1259,20 +1260,11 @@ export default function HomePage() {
                       </div>
                     ) : (
                       <>
-                        <section className="lesson-section">
-                          <h4>Objectives</h4>
-                          <ul>
-                            {selectedLesson.objectives.map((objective) => (
-                              <li key={objective}>{objective}</li>
-                            ))}
-                          </ul>
-                        </section>
-                        <section className="lesson-section">
-                          <h4>Lesson story</h4>
-                          <MarkdownRenderer content={selectedLesson.content_markdown} />
-                        </section>
-                      <section className="lesson-section">
-                        <h4>Interactive lesson</h4>
+                        <section className="lesson-section lesson-section--compact">
+                          <h4>Interactive lesson</h4>
+                          <p style={{ margin: 0, color: '#475569' }}>
+                            Start or continue the guided chat below.
+                          </p>
                         {lessonChatLessonId !== selectedLesson.id ? (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                             <button
@@ -1399,29 +1391,44 @@ export default function HomePage() {
                             </div>
                           )}
                         </section>
-                        {selectedLesson.resources && selectedLesson.resources.length > 0 && (
+                        <details className="lesson-details-toggle">
+                          <summary>📘 Lesson details</summary>
                           <section className="lesson-section">
-                            <h4>Helpful resources</h4>
-                            <ul className="resource-list">
-                              {selectedLesson.resources.map((resource, index) => {
-                                const label = resource.label || `Resource ${index + 1}`;
-                                const url = resource.url ?? undefined;
-                                return (
-                                  <li key={`${label}-${index}`}>
-                                    {url ? (
-                                      <a href={url} target="_blank" rel="noreferrer">
-                                        {label}
-                                      </a>
-                                    ) : (
-                                      <span>{label}</span>
-                                    )}
-                                    {resource.type && <small> · {String(resource.type)}</small>}
-                                  </li>
-                                );
-                              })}
+                            <h4>Objectives</h4>
+                            <ul>
+                              {selectedLesson.objectives.map((objective) => (
+                                <li key={objective}>{objective}</li>
+                              ))}
                             </ul>
                           </section>
-                        )}
+                          <section className="lesson-section">
+                            <h4>Lesson story</h4>
+                            <MarkdownRenderer content={selectedLesson.content_markdown} />
+                          </section>
+                          {selectedLesson.resources && selectedLesson.resources.length > 0 && (
+                            <section className="lesson-section">
+                              <h4>Helpful resources</h4>
+                              <ul className="resource-list">
+                                {selectedLesson.resources.map((resource, index) => {
+                                  const label = resource.label || `Resource ${index + 1}`;
+                                  const url = resource.url ?? undefined;
+                                  return (
+                                    <li key={`${label}-${index}`}>
+                                      {url ? (
+                                        <a href={url} target="_blank" rel="noreferrer">
+                                          {label}
+                                        </a>
+                                      ) : (
+                                        <span>{label}</span>
+                                      )}
+                                      {resource.type && <small> · {String(resource.type)}</small>}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </section>
+                          )}
+                        </details>
                       </>
                     )}
                     {selectedLesson.latest_attempt && (
