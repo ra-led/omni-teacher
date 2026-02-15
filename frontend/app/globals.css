@@ -249,6 +249,26 @@ input, textarea, select {
   min-height: 100%;
 }
 
+
+.program-focus {
+  margin: 0;
+  color: #4c1d95;
+  font-weight: 600;
+}
+
+.lesson-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.lesson-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
 .lesson-detail-header h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.6rem;
@@ -298,6 +318,17 @@ input, textarea, select {
   cursor: pointer;
   font-weight: 700;
   color: #312e81;
+  margin: 0;
+}
+
+.lesson-details-toggle h4,
+.lesson-details-toggle p,
+.lesson-details-toggle ul {
+  margin: 0;
+}
+
+.lesson-details-toggle ul {
+  padding-left: 1.1rem;
 }
 
 .lesson-plan {

@@ -1091,11 +1091,9 @@ export default function HomePage() {
         <section className="form-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <h2>{selectedProgram.title}</h2>
-            <div className="progress-pills">
-              {selectedProgram.total_mastery_stars > 0 && (
-                <span className="progress-pill">Stars earned: {selectedProgram.total_mastery_stars}</span>
-              )}
-            </div>
+            {selectedProgram.skill_profile && (
+              <p className="program-focus">Focus: {selectedProgram.skill_profile}</p>
+            )}
             {selectedProgram.summary && <p>{selectedProgram.summary}</p>}
             {diagnosticNotes && (
               <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}>
@@ -1253,6 +1251,26 @@ export default function HomePage() {
                         </div>
                         <p className="lesson-detail-subtitle">Chat-first lesson workspace</p>
                       </div>
+                      {selectedLesson.unlocked && lessonChatLessonId !== selectedLesson.id && (
+                        <div className="lesson-header-actions">
+                          <button
+                            type="button"
+                            className="primary-button"
+                            onClick={() => handleStartLessonChat(selectedLesson, false)}
+                            disabled={isConnectingLessonChat}
+                          >
+                            {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => handleStartLessonChat(selectedLesson, true)}
+                            disabled={isConnectingLessonChat}
+                          >
+                            {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
+                          </button>
+                        </div>
+                      )}
                     </header>
                     {!selectedLesson.unlocked ? (
                       <div className="lesson-locked-banner">
@@ -1265,26 +1283,7 @@ export default function HomePage() {
                           <p style={{ margin: 0, color: '#475569' }}>
                             Start or continue the guided chat below.
                           </p>
-                        {lessonChatLessonId !== selectedLesson.id ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            <button
-                              type="button"
-                              className="primary-button"
-                              onClick={() => handleStartLessonChat(selectedLesson, false)}
-                              disabled={isConnectingLessonChat}
-                            >
-                              {isConnectingLessonChat ? 'Preparing guided chat…' : 'Start guided lesson chat'}
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => handleStartLessonChat(selectedLesson, true)}
-                              disabled={isConnectingLessonChat}
-                            >
-                              {isConnectingLessonChat ? 'Preparing voice tutor…' : 'Start with playful voice'}
-                            </button>
-                          </div>
-                          ) : (
+                        {lessonChatLessonId === selectedLesson.id && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <div className="chat-thread" ref={lessonChatThreadRef}>
                                 {lessonChatMessages.map((message) => (
@@ -1391,7 +1390,7 @@ export default function HomePage() {
                             </div>
                           )}
                         </section>
-                        <details className="lesson-details-toggle">
+                        <details className="lesson-details-toggle" open={lessonChatLessonId !== selectedLesson.id}>
                           <summary>📘 Lesson details</summary>
                           <section className="lesson-section">
                             <h4>Objectives</h4>
