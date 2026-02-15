@@ -253,6 +253,8 @@ function formatDiagnosticNotes(notes: unknown): string | null {
   return value.length > 0 ? value : null;
 }
 
+type AppMode = 'learners' | 'programs' | 'lesson' | 'progress';
+
 export default function HomePage() {
   const [student, setStudent] = React.useState<StudentResponse | null>(null);
   const [students, setStudents] = React.useState<StudentResponse[]>([]);
@@ -281,6 +283,7 @@ export default function HomePage() {
   const [showLessonChatModal, setShowLessonChatModal] = React.useState(false);
   const lessonIntroMessageRef = React.useRef<string | null>(null);
   const [showStudentModal, setShowStudentModal] = React.useState(false);
+  const [activeMode, setActiveMode] = React.useState<AppMode>('learners');
 
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -318,6 +321,13 @@ export default function HomePage() {
     () => lessonChatMessages.some((message) => message.sender === 'assistant'),
     [lessonChatMessages],
   );
+
+  const modeLabel: Record<AppMode, string> = {
+    learners: 'Learners',
+    programs: 'Programs',
+    lesson: 'Lesson',
+    progress: 'Progress',
+  };
 
   const stopMediaStream = React.useCallback(() => {
     if (mediaStreamRef.current) {
@@ -479,6 +489,7 @@ export default function HomePage() {
     setNotice(null);
     await refreshCatalog(learner.id);
     await refreshProgress(learner.id);
+    setActiveMode('programs');
   };
 
   const handleRegisterStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -528,6 +539,7 @@ export default function HomePage() {
         },
       );
       setSelectedProgram(program);
+      setActiveMode('programs');
       await refreshCatalog(student.id);
       setTopicForm({ topic: '', learning_goal: '', traits: '' });
       setShowTopicModal(false);
@@ -543,6 +555,7 @@ export default function HomePage() {
       setError(null);
       const program = await apiRequest<LearningProgramResponse>(`/api/programs/${programId}`);
       setSelectedProgram(program);
+      setActiveMode(program.lessons.length > 0 && program.status === 'ready' ? 'lesson' : 'programs');
       if (student) {
         await refreshProgress(student.id);
       }
@@ -610,6 +623,7 @@ export default function HomePage() {
         },
       );
       setSelectedProgram(result.program);
+      setActiveMode(result.program.lessons.length > 0 ? 'lesson' : 'programs');
       await refreshCatalog(student.id);
       await refreshProgress(student.id);
     } catch (err) {
@@ -651,6 +665,7 @@ export default function HomePage() {
   };
 
   const handleStartLessonChat = (lesson: LessonResponse, ttsEnabled: boolean) => {
+    setActiveMode('lesson');
     setShowLessonChatModal(true);
     void handleLaunchLessonChat(lesson, ttsEnabled);
   };
@@ -787,12 +802,72 @@ export default function HomePage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', color: '#1d4ed8' }}>Omni Teacher Studio</h1>
-        <p style={{ color: '#475569', fontSize: '1.1rem' }}>
-          Generate personalised learning adventures, track progress, and chat with an Omni-powered tutor.
-        </p>
+      <header className="app-shell-header">
+        <button
+          type="button"
+          className="app-shell-logo"
+          onClick={() => setActiveMode(student ? 'programs' : 'learners')}
+        >
+          Omni Teacher
+        </button>
+        <nav className="app-shell-breadcrumb" aria-label="Context breadcrumb">
+          <button type="button" onClick={() => setActiveMode('learners')}>
+            Learner: {student?.display_name ?? 'Not selected'}
+          </button>
+          <span>›</span>
+          <button
+            type="button"
+            onClick={() => setActiveMode(student ? 'programs' : 'learners')}
+            disabled={!student}
+          >
+            {modeLabel.programs}
+          </button>
+          {selectedProgram && (activeMode === 'programs' || activeMode === 'lesson') && (
+            <>
+              <span>›</span>
+              <button type="button" onClick={() => setActiveMode('programs')}>
+                {selectedProgram.title}
+              </button>
+            </>
+          )}
+          {activeMode === 'lesson' && selectedLesson && (
+            <>
+              <span>›</span>
+              <button type="button" onClick={() => setActiveMode('lesson')}>
+                Lesson {selectedLesson.order_index}
+              </button>
+            </>
+          )}
+        </nav>
+        <div className="app-shell-actions">
+          <button type="button" className="secondary-button" onClick={() => setActiveMode('learners')}>
+            Switch learner
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={!student}
+            onClick={() => setActiveMode('progress')}
+          >
+            Progress
+          </button>
+        </div>
       </header>
+      <div className="mode-tabs" role="tablist" aria-label="App modes">
+        {(['learners', 'programs', 'lesson', 'progress'] as AppMode[]).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            role="tab"
+            className={`mode-tab${activeMode === mode ? ' mode-tab--active' : ''}`}
+            aria-selected={activeMode === mode}
+            disabled={!student && mode !== 'learners'}
+            onClick={() => setActiveMode(mode)}
+          >
+            {modeLabel[mode]}
+          </button>
+        ))}
+      </div>
 
       {error && (
         <div className="badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#b91c1c' }}>
@@ -806,8 +881,21 @@ export default function HomePage() {
         </div>
       )}
 
-      <section className="form-section">
-        <h2>Learner Profiles</h2>
+
+      {!student && activeMode !== 'learners' && (
+        <section className="form-section">
+          <p style={{ margin: 0, color: '#334155' }}>Select a learner first to open this mode.</p>
+          <div style={{ marginTop: '0.75rem' }}>
+            <button type="button" className="primary-button" onClick={() => setActiveMode('learners')}>
+              Go to Learners
+            </button>
+          </div>
+        </section>
+      )}
+
+      {activeMode === 'learners' && (
+        <section className="form-section">
+          <h2>Learner Profiles</h2>
         <div className="student-grid">
           {students.map((learner) => (
             <button
@@ -844,7 +932,8 @@ export default function HomePage() {
             Active learner <strong>{student.display_name}</strong> (ID: {student.id})
           </p>
         )}
-      </section>
+        </section>
+      )}
       {showStudentModal && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-card">
@@ -956,7 +1045,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {student && (
+      {student && activeMode === 'programs' && (
         <section className="form-section">
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>Learning Adventures Library</h2>
@@ -998,7 +1087,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {selectedProgram && (
+      {selectedProgram && (activeMode === 'programs' || activeMode === 'lesson') && (
         <section className="form-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <h2>{selectedProgram.title}</h2>
@@ -1015,7 +1104,7 @@ export default function HomePage() {
             )}
           </header>
 
-          {selectedProgram.status === 'awaiting_diagnostic' && selectedProgram.quiz && (
+          {activeMode === 'programs' && selectedProgram.status === 'awaiting_diagnostic' && selectedProgram.quiz && (
             <form
               onSubmit={handleSubmitDiagnostic}
               className="lesson-card"
@@ -1101,7 +1190,17 @@ export default function HomePage() {
             </form>
           )}
 
-          {selectedProgram.lessons.length === 0 ? null : (
+
+          {activeMode === 'programs' && selectedProgram.status === 'ready' && selectedProgram.lessons.length > 0 && (
+            <section className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+              <p style={{ margin: 0, color: '#334155' }}>Program is ready. Open lesson delivery to continue.</p>
+              <button type="button" className="primary-button" onClick={() => setActiveMode('lesson')}>
+                Open lesson mode
+              </button>
+            </section>
+          )}
+
+          {activeMode === 'lesson' && selectedProgram.lessons.length > 0 && (
             <div className="lesson-layout">
               <aside className="lesson-list">
                 {selectedProgram.lessons.map((lesson) => {
@@ -1376,7 +1475,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {student && progress && (
+      {student && progress && activeMode === 'progress' && (
         <section className="form-section">
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>Progress snapshot</h2>
