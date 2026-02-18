@@ -800,8 +800,11 @@ export default function HomePage() {
     lessonChatThreadRef.current.scrollTop = lessonChatThreadRef.current.scrollHeight;
   }, [lessonChatMessages, isTeacherTyping]);
 
+  const isLessonChatActiveForSelectedLesson =
+    activeMode === 'lesson' && Boolean(selectedLesson && lessonChatLessonId === selectedLesson.id);
+
   return (
-    <div style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className={`app-shell${isLessonChatActiveForSelectedLesson ? ' app-shell--lesson-workspace' : ''}`}>
       <header className="app-shell-header">
         <button
           type="button"
@@ -1156,7 +1159,7 @@ export default function HomePage() {
           )}
 
           {activeMode === 'lesson' && selectedProgram.lessons.length > 0 && (
-            <div className="lesson-layout">
+            <div className={`lesson-layout${isLessonChatActiveForSelectedLesson ? ' lesson-layout--workspace' : ''}`}>
               <aside className="lesson-list">
                 {selectedProgram.lessons.map((lesson) => {
                   const isActive = lesson.id === activeLessonId;
@@ -1195,7 +1198,7 @@ export default function HomePage() {
               </aside>
               <article className="lesson-detail">
                 {selectedLesson ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className={`lesson-detail-content${isLessonChatActiveForSelectedLesson ? ' lesson-detail-content--workspace' : ''}`}>
                     {!selectedLesson.unlocked ? (
                       <div className="lesson-locked-banner">
                         Complete the previous lesson to unlock this adventure.
@@ -1224,7 +1227,7 @@ export default function HomePage() {
                           </div>
                         )}
                         {lessonChatLessonId === selectedLesson.id && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div className={`lesson-chat-workspace${isLessonChatActiveForSelectedLesson ? ' lesson-chat-workspace--fullscreen' : ''}`}>
                               <div className="chat-thread" ref={lessonChatThreadRef}>
                                 {lessonChatMessages.map((message) => (
                                   <article key={message.id} className={`chat-message ${message.sender}`}>

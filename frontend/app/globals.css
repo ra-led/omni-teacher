@@ -19,6 +19,24 @@ main {
   width: 100%;
 }
 
+.app-shell {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.app-shell--lesson-workspace {
+  max-width: none;
+  padding: 1rem 1rem 0;
+  min-height: 100vh;
+  height: 100vh;
+  gap: 1rem;
+  overflow: hidden;
+}
+
 button {
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease,
@@ -156,6 +174,13 @@ input, textarea, select {
   background: rgba(248, 250, 252, 0.8);
 }
 
+.lesson-layout--workspace .chat-thread {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  border-radius: 0.85rem;
+}
+
 .lesson-card {
   background: white;
   border-radius: 1rem;
@@ -171,10 +196,23 @@ input, textarea, select {
   align-items: flex-start;
 }
 
+.lesson-layout--workspace {
+  flex: 1;
+  min-height: 0;
+  gap: 1rem;
+  align-items: stretch;
+}
+
 .lesson-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.lesson-layout--workspace .lesson-list {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .lesson-item {
@@ -249,8 +287,44 @@ input, textarea, select {
   min-height: 100%;
 }
 
+.lesson-layout--workspace .lesson-detail {
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
+.lesson-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
 
+.lesson-detail-content--workspace {
+  min-height: 0;
+  height: 100%;
+  gap: 0.5rem;
+}
+
+.lesson-chat-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lesson-chat-workspace--fullscreen {
+  flex: 1;
+  min-height: 0;
+  gap: 0.55rem;
+}
+
+.lesson-layout--workspace .lesson-section--compact {
+  flex: 1;
+  min-height: 0;
+}
+
+.lesson-layout--workspace .lesson-details-toggle {
+  margin-top: 0;
+}
 
 .lesson-header-actions {
   display: flex;
@@ -381,7 +455,12 @@ input, textarea, select {
   .lesson-detail {
     padding: 1.25rem;
   }
+
+  .lesson-layout--workspace .lesson-detail {
+    padding: 0;
+  }
 }
+
 
 .progress-pills {
   display: flex;
@@ -619,13 +698,17 @@ input, textarea, select {
 .chat-input {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
+  gap: 0.6rem;
+  align-items: start;
 }
 
 .chat-input textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 72px;
+}
+
+.lesson-layout--workspace .chat-input textarea {
+  min-height: 64px;
 }
 
 .chat-typing {
@@ -668,7 +751,8 @@ input, textarea, select {
 .chat-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .chat-controls label {
