@@ -810,64 +810,22 @@ export default function HomePage() {
         >
           Omni Teacher
         </button>
-        <nav className="app-shell-breadcrumb" aria-label="Context breadcrumb">
-          <button type="button" onClick={() => setActiveMode('learners')}>
-            Learner: {student?.display_name ?? 'Not selected'}
-          </button>
-          <span>›</span>
-          <button
-            type="button"
-            onClick={() => setActiveMode(student ? 'programs' : 'learners')}
-            disabled={!student}
-          >
-            {modeLabel.programs}
-          </button>
-          {selectedProgram && (activeMode === 'programs' || activeMode === 'lesson') && (
-            <>
-              <span>›</span>
-              <button type="button" onClick={() => setActiveMode('programs')}>
-                {selectedProgram.title}
-              </button>
-            </>
-          )}
-          {activeMode === 'lesson' && selectedLesson && (
-            <>
-              <span>›</span>
-              <button type="button" onClick={() => setActiveMode('lesson')}>
-                Lesson {selectedLesson.order_index}
-              </button>
-            </>
-          )}
-        </nav>
-        <div className="app-shell-actions">
-          <button type="button" className="secondary-button" onClick={() => setActiveMode('learners')}>
-            Switch learner
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={!student}
-            onClick={() => setActiveMode('progress')}
-          >
-            Progress
-          </button>
+        <div className="mode-tabs" role="tablist" aria-label="App modes">
+          {(['learners', 'programs', 'lesson', 'progress'] as AppMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              role="tab"
+              className={`mode-tab${activeMode === mode ? ' mode-tab--active' : ''}`}
+              aria-selected={activeMode === mode}
+              disabled={!student && mode !== 'learners'}
+              onClick={() => setActiveMode(mode)}
+            >
+              {modeLabel[mode]}
+            </button>
+          ))}
         </div>
       </header>
-      <div className="mode-tabs" role="tablist" aria-label="App modes">
-        {(['learners', 'programs', 'lesson', 'progress'] as AppMode[]).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            role="tab"
-            className={`mode-tab${activeMode === mode ? ' mode-tab--active' : ''}`}
-            aria-selected={activeMode === mode}
-            disabled={!student && mode !== 'learners'}
-            onClick={() => setActiveMode(mode)}
-          >
-            {modeLabel[mode]}
-          </button>
-        ))}
-      </div>
 
       {error && (
         <div className="badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#b91c1c' }}>

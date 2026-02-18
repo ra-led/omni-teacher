@@ -399,10 +399,12 @@ input, textarea, select {
 
 
 .app-shell-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .app-shell-logo {
@@ -412,27 +414,6 @@ input, textarea, select {
   font-weight: 800;
   color: #1d4ed8;
   cursor: pointer;
-}
-
-.app-shell-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  color: #475569;
-}
-
-.app-shell-breadcrumb button {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.app-shell-actions {
-  display: flex;
-  gap: 0.75rem;
 }
 
 .mode-tabs {
