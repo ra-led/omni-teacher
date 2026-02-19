@@ -1049,7 +1049,9 @@ export default function HomePage() {
       )}
 
       {selectedProgram && (activeMode === 'programs' || activeMode === 'lesson') && (
-        <section className="form-section" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <section
+          className={`form-section program-pane${isLessonChatActiveForSelectedLesson ? ' form-section--lesson-workspace' : ''}`}
+        >
           {activeMode === 'programs' && (
             <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <h2>{selectedProgram.title}</h2>
@@ -1375,7 +1377,7 @@ export default function HomePage() {
                         )}
                       </>
                     )}
-                    {selectedLesson.latest_attempt && (
+                    {!isLessonChatActiveForSelectedLesson && selectedLesson.latest_attempt && (
                       <section className="lesson-section">
                         <h4>Latest mastery feedback</h4>
                         <div className="lesson-feedback">
