@@ -1333,9 +1333,10 @@ export default function HomePage() {
                             </div>
                           )}
                         </section>
-                        <details className="lesson-details-toggle" open={lessonChatLessonId !== selectedLesson.id}>
-                          <summary>📘 Lesson details</summary>
-                          <section className="lesson-section">
+                        {!isLessonChatActiveForSelectedLesson && (
+                          <details className="lesson-details-toggle" open>
+                            <summary>📘 Lesson details</summary>
+                            <section className="lesson-section">
                             <h4>Objectives</h4>
                             <ul>
                               {selectedLesson.objectives.map((objective) => (
@@ -1347,8 +1348,8 @@ export default function HomePage() {
                             <h4>Lesson story</h4>
                             <MarkdownRenderer content={selectedLesson.content_markdown} />
                           </section>
-                          {selectedLesson.resources && selectedLesson.resources.length > 0 && (
-                            <section className="lesson-section">
+                            {selectedLesson.resources && selectedLesson.resources.length > 0 && (
+                              <section className="lesson-section">
                               <h4>Helpful resources</h4>
                               <ul className="resource-list">
                                 {selectedLesson.resources.map((resource, index) => {
@@ -1369,8 +1370,9 @@ export default function HomePage() {
                                 })}
                               </ul>
                             </section>
-                          )}
-                        </details>
+                            )}
+                          </details>
+                        )}
                       </>
                     )}
                     {selectedLesson.latest_attempt && (

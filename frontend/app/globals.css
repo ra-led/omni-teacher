@@ -30,10 +30,10 @@ main {
 
 .app-shell--lesson-workspace {
   max-width: none;
-  padding: 1rem 1rem 0;
-  min-height: 100vh;
-  height: 100vh;
-  gap: 1rem;
+  padding: 0.75rem 1rem;
+  min-height: 100dvh;
+  height: 100dvh;
+  gap: 0.75rem;
   overflow: hidden;
 }
 
@@ -175,9 +175,10 @@ input, textarea, select {
 }
 
 .lesson-layout--workspace .chat-thread {
-  flex: 1;
   min-height: 0;
+  height: 100%;
   max-height: none;
+  overflow-y: auto;
   border-radius: 0.85rem;
 }
 
@@ -199,8 +200,10 @@ input, textarea, select {
 .lesson-layout--workspace {
   flex: 1;
   min-height: 0;
-  gap: 1rem;
+  height: 100%;
+  gap: 0.85rem;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .lesson-list {
@@ -211,6 +214,7 @@ input, textarea, select {
 
 .lesson-layout--workspace .lesson-list {
   min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
   padding-right: 0.25rem;
 }
@@ -289,6 +293,7 @@ input, textarea, select {
 
 .lesson-layout--workspace .lesson-detail {
   min-height: 0;
+  height: 100%;
   padding: 0;
   overflow: hidden;
 }
@@ -302,7 +307,8 @@ input, textarea, select {
 .lesson-detail-content--workspace {
   min-height: 0;
   height: 100%;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  overflow: hidden;
 }
 
 .lesson-chat-workspace {
@@ -314,12 +320,17 @@ input, textarea, select {
 .lesson-chat-workspace--fullscreen {
   flex: 1;
   min-height: 0;
-  gap: 0.55rem;
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 70dvh) auto;
+  gap: 0.45rem;
+  overflow: hidden;
 }
 
 .lesson-layout--workspace .lesson-section--compact {
   flex: 1;
   min-height: 0;
+  margin: 0;
 }
 
 .lesson-layout--workspace .lesson-details-toggle {
@@ -459,6 +470,10 @@ input, textarea, select {
   .lesson-layout--workspace .lesson-detail {
     padding: 0;
   }
+
+  .lesson-layout--workspace .lesson-chat-workspace--fullscreen {
+    grid-template-rows: minmax(0, 58dvh) auto;
+  }
 }
 
 
@@ -484,6 +499,10 @@ input, textarea, select {
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.app-shell--lesson-workspace .app-shell-header {
+  margin: 0;
 }
 
 .app-shell-logo {
@@ -698,8 +717,8 @@ input, textarea, select {
 .chat-input {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.6rem;
-  align-items: start;
+  gap: 0.55rem;
+  align-items: end;
 }
 
 .chat-input textarea {
@@ -708,7 +727,9 @@ input, textarea, select {
 }
 
 .lesson-layout--workspace .chat-input textarea {
-  min-height: 64px;
+  min-height: 56px;
+  max-height: 18dvh;
+  overflow-y: auto;
 }
 
 .chat-typing {
