@@ -241,6 +241,33 @@ function renderStars(count: number) {
   return '⭐'.repeat(clamped) + '☆'.repeat(3 - clamped);
 }
 
+function normalizeChatMessages(messages: ChatMessageOut[]): ChatMessageOut[] {
+  const byId = new Map<string, ChatMessageOut>();
+  for (const message of messages) {
+    if (!byId.has(message.id)) {
+      byId.set(message.id, message);
+    }
+  }
+
+  const sorted = Array.from(byId.values()).sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
+
+  return sorted.filter((message, index, arr) => {
+    if (index === 0 || message.sender !== 'student') {
+      return true;
+    }
+    const prev = arr[index - 1];
+    const sameContent =
+      prev.sender === 'student' &&
+      (prev.text ?? '') === (message.text ?? '') &&
+      (prev.image_url ?? '') === (message.image_url ?? '');
+    const closeInTime =
+      Math.abs(new Date(prev.created_at).getTime() - new Date(message.created_at).getTime()) < 10_000;
+    return !(sameContent && closeInTime);
+  });
+}
+
 function formatDiagnosticNotes(notes: unknown): string | null {
   if (notes == null) {
     return null;
@@ -709,25 +736,32 @@ export default function HomePage() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data) as ChatSocketEvent;
       if (data.type === 'history') {
-        setLessonChatMessages(data.messages);
+        setLessonChatMessages(normalizeChatMessages(data.messages));
         setIsTeacherTyping(false);
       } else if (data.type === 'student_message' || data.type === 'assistant_message') {
         setLessonChatMessages((prev) => {
-          if (data.type === 'student_message' && prev.length > 0) {
-            const last = prev[prev.length - 1];
-            if (
-              last.sender === 'student' &&
-              last.id.startsWith('optimistic-') &&
-              last.text === data.message.text &&
-              last.image_url === data.message.image_url
-            ) {
-              return [...prev.slice(0, -1), data.message];
-            }
-          }
           if (data.type === 'student_message' && data.message.text === lessonIntroMessageRef.current) {
             return prev;
           }
-          return [...prev, data.message];
+
+          const withoutMatchingOptimistic =
+            data.type === 'student_message'
+              ? prev.filter(
+                  (message) =>
+                    !(
+                      message.sender === 'student' &&
+                      message.id.startsWith('optimistic-') &&
+                      message.text === data.message.text &&
+                      message.image_url === data.message.image_url
+                    ),
+                )
+              : prev;
+
+          if (withoutMatchingOptimistic.some((message) => message.id === data.message.id)) {
+            return withoutMatchingOptimistic;
+          }
+
+          return normalizeChatMessages([...withoutMatchingOptimistic, data.message]);
         });
         if (data.type === 'assistant_message') {
           setIsTeacherTyping(false);
