@@ -9,7 +9,6 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
       NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
-      NEXT_PUBLIC_INVESTOR_DECK_URL: http://localhost:8081
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -17,7 +16,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-      - investors-web
 
   backend:
     build:
@@ -28,7 +26,6 @@ services:
       DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o
@@ -53,7 +50,6 @@ services:
       DATABASE_URL: postgresql+psycopg2://omni:omni@postgres:5432/omni
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: omni
       MINIO_SECRET_KEY: omni_secret
       OMNI_MODEL: gpt-4o
@@ -72,16 +68,12 @@ services:
       POSTGRES_DB: omni
       POSTGRES_USER: omni
       POSTGRES_PASSWORD: omni
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   redis:
     image: redis:7-alpine
     command: redis-server --save 60 1 --loglevel warning
-    volumes:
-      - redis-data:/data
     ports:
       - "6379:6379"
 
@@ -91,8 +83,6 @@ services:
     environment:
       MINIO_ROOT_USER: omni
       MINIO_ROOT_PASSWORD: omni_secret
-    volumes:
-      - minio-data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -112,15 +102,3 @@ services:
     depends_on:
       - backend
 
-  investors-web:
-    image: python:3.12-alpine
-    command: sh -c "python -m http.server 8081 -d /site"
-    volumes:
-      - ./omni-teacher-web:/site:ro
-    ports:
-      - "8081:8081"
-
-volumes:
-  postgres-data:
-  redis-data:
-  minio-data:

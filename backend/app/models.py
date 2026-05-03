@@ -42,15 +42,29 @@ class ProgramStatus(str, enum.Enum):
     READY = "ready"
 
 
+class Account(TimestampMixin, Base):
+    __tablename__ = "accounts"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, nullable=False, unique=True)
+    password_salt = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    session_token = Column(String, nullable=True, unique=True)
+
+    students = relationship("Student", back_populates="account", cascade="all, delete-orphan")
+
+
 class Student(TimestampMixin, Base):
     __tablename__ = "students"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id = Column(String, ForeignKey("accounts.id"), nullable=True, index=True)
     display_name = Column(String, nullable=False)
     age = Column(Integer, nullable=True)
     grade = Column(String, nullable=True)
     preferences = Column(JSON, default=dict)
 
+    account = relationship("Account", back_populates="students")
     programs = relationship("LearningProgram", back_populates="student", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="student", cascade="all, delete-orphan")
     lesson_attempts = relationship("LessonAttempt", back_populates="student", cascade="all, delete-orphan")

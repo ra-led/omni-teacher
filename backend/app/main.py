@@ -5,8 +5,10 @@ from __future__ import annotations
 import uuid
 from fastapi import (
     Depends,
+    Header,
     FastAPI,
     HTTPException,
+    Response,
     UploadFile,
     WebSocket,
     WebSocketDisconnect,
@@ -21,8 +23,11 @@ from .core.config import settings
 from .core.openai_client import OmniAPIError, get_omni_client
 from .core.db import SessionLocal, engine, ensure_schema, get_db
 from .core.storage import storage_client
-from .models import Base, ChatMessage, ChatSession
+from .models import Account, Base, ChatMessage, ChatSession
 from .schemas import (
+    AccountAuthRequest,
+    AccountResponse,
+    AuthSessionResponse,
     ChatMessageIn,
     ChatMessageOut,
     ChatSessionSnapshot,
@@ -43,6 +48,7 @@ from .schemas import (
     StudentResponse,
     TopicCreate,
 )
+from .services import auth as auth_service
 from .services import chat as chat_service
 from .services import programs as programs_service
 
@@ -69,6 +75,48 @@ async def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def get_current_account(
+    db: Session = Depends(get_db),
+    x_account_token: str | None = Header(default=None),
+) -> Account:
+    account = auth_service.get_account_by_token(db, x_account_token)
+    if not account:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    return account
+
+
+@app.post("/api/auth/signup", response_model=AuthSessionResponse, tags=["auth"])
+def sign_up(payload: AccountAuthRequest, db: Session = Depends(get_db)) -> AuthSessionResponse:
+    try:
+        account, token = auth_service.create_account(db, email=payload.email, password=payload.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return AuthSessionResponse(token=token, account=AccountResponse.model_validate(account))
+
+
+@app.post("/api/auth/login", response_model=AuthSessionResponse, tags=["auth"])
+def sign_in(payload: AccountAuthRequest, db: Session = Depends(get_db)) -> AuthSessionResponse:
+    try:
+        account, token = auth_service.login_account(db, email=payload.email, password=payload.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    return AuthSessionResponse(token=token, account=AccountResponse.model_validate(account))
+
+
+@app.get("/api/auth/me", response_model=AccountResponse, tags=["auth"])
+def auth_me(account: Account = Depends(get_current_account)) -> AccountResponse:
+    return AccountResponse.model_validate(account)
+
+
+@app.post("/api/auth/logout", status_code=status.HTTP_204_NO_CONTENT, tags=["auth"])
+def auth_logout(
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> Response:
+    auth_service.logout_account(db, account)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.post("/api/transcribe", response_model=SpeechTranscript, tags=["chat"])
 async def transcribe_audio(file: UploadFile = File(...)) -> SpeechTranscript:
     contents = await file.read()
@@ -85,14 +133,21 @@ async def transcribe_audio(file: UploadFile = File(...)) -> SpeechTranscript:
 
 
 @app.post("/api/students", response_model=StudentResponse, tags=["students"])
-def register_student(payload: StudentCreate, db: Session = Depends(get_db)) -> StudentResponse:
-    student = programs_service.create_student(db, payload)
+def register_student(
+    payload: StudentCreate,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> StudentResponse:
+    student = programs_service.create_student(db, payload, account_id=account.id)
     return StudentResponse.model_validate(student)
 
 
 @app.get("/api/students", response_model=list[StudentResponse], tags=["students"])
-def list_students(db: Session = Depends(get_db)) -> list[StudentResponse]:
-    students = programs_service.list_students(db)
+def list_students(
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> list[StudentResponse]:
+    students = programs_service.list_students(db, account_id=account.id)
     return [StudentResponse.model_validate(student) for student in students]
 
 
@@ -101,8 +156,15 @@ def list_students(db: Session = Depends(get_db)) -> list[StudentResponse]:
     response_model=list[ProgramCatalogEntry],
     tags=["programs"],
 )
-def student_catalog(student_id: str, db: Session = Depends(get_db)) -> list[ProgramCatalogEntry]:
-    return programs_service.list_catalog(db, student_id)
+def student_catalog(
+    student_id: str,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> list[ProgramCatalogEntry]:
+    try:
+        return programs_service.list_catalog(db, student_id, account_id=account.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @app.post(
@@ -110,14 +172,24 @@ def student_catalog(student_id: str, db: Session = Depends(get_db)) -> list[Prog
     response_model=LearningProgramResponse,
     tags=["programs"],
 )
-def add_topic(student_id: str, payload: TopicCreate, db: Session = Depends(get_db)) -> LearningProgramResponse:
+def add_topic(
+    student_id: str,
+    payload: TopicCreate,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> LearningProgramResponse:
     try:
-        program = programs_service.create_topic_program(db, student_id=student_id, payload=payload)
+        program = programs_service.create_topic_program(
+            db,
+            student_id=student_id,
+            payload=payload,
+            account_id=account.id,
+        )
     except ValueError as exc:  # missing student
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    refreshed = programs_service.get_program(db, program.id)
+    refreshed = programs_service.get_program(db, program.id, account_id=account.id)
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program creation failed")
     return programs_service.serialize_program(refreshed)
@@ -128,8 +200,12 @@ def add_topic(student_id: str, payload: TopicCreate, db: Session = Depends(get_d
     response_model=LearningProgramResponse,
     tags=["programs"],
 )
-def fetch_program(program_id: str, db: Session = Depends(get_db)) -> LearningProgramResponse:
-    program = programs_service.get_program(db, program_id)
+def fetch_program(
+    program_id: str,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> LearningProgramResponse:
+    program = programs_service.get_program(db, program_id, account_id=account.id)
     if not program:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
     return programs_service.serialize_program(program)
@@ -140,16 +216,26 @@ def fetch_program(program_id: str, db: Session = Depends(get_db)) -> LearningPro
     response_model=DiagnosticResultResponse,
     tags=["programs"],
 )
-def submit_diagnostic(program_id: str, submission: DiagnosticSubmission, db: Session = Depends(get_db)) -> DiagnosticResultResponse:
+def submit_diagnostic(
+    program_id: str,
+    submission: DiagnosticSubmission,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> DiagnosticResultResponse:
     try:
-        program, attempt = programs_service.submit_diagnostic(db, program_id=program_id, submission=submission)
+        program, attempt = programs_service.submit_diagnostic(
+            db,
+            program_id=program_id,
+            submission=submission,
+            account_id=account.id,
+        )
     except ValueError as exc:
         message = str(exc)
         status_code = status.HTTP_404_NOT_FOUND if "not found" in message.lower() else status.HTTP_400_BAD_REQUEST
         raise HTTPException(status_code=status_code, detail=message) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    refreshed = programs_service.get_program(db, program.id)
+    refreshed = programs_service.get_program(db, program.id, account_id=account.id)
     if not refreshed:
         raise HTTPException(status_code=500, detail="Program evaluation failed")
     return DiagnosticResultResponse(
@@ -163,9 +249,19 @@ def submit_diagnostic(program_id: str, submission: DiagnosticSubmission, db: Ses
     response_model=LessonCompletionResponse,
     tags=["progress"],
 )
-def complete_lesson(lesson_id: str, payload: LessonCompletionRequest, db: Session = Depends(get_db)) -> LessonCompletionResponse:
+def complete_lesson(
+    lesson_id: str,
+    payload: LessonCompletionRequest,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> LessonCompletionResponse:
     try:
-        attempt = programs_service.complete_lesson(db, lesson_id=lesson_id, payload=payload)
+        attempt = programs_service.complete_lesson(
+            db,
+            lesson_id=lesson_id,
+            payload=payload,
+            account_id=account.id,
+        )
     except ValueError as exc:
         message = str(exc)
         status_code = (
@@ -192,9 +288,13 @@ def complete_lesson(lesson_id: str, payload: LessonCompletionRequest, db: Sessio
     response_model=ProgressSnapshot,
     tags=["progress"],
 )
-def student_progress(student_id: str, db: Session = Depends(get_db)) -> ProgressSnapshot:
+def student_progress(
+    student_id: str,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> ProgressSnapshot:
     try:
-        return programs_service.capture_progress(db, student_id)
+        return programs_service.capture_progress(db, student_id, account_id=account.id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -204,16 +304,24 @@ def student_progress(student_id: str, db: Session = Depends(get_db)) -> Progress
     response_model=ChatSessionSnapshot,
     tags=["chat"],
 )
-def create_chat_session(payload: CreateChatSession, db: Session = Depends(get_db)) -> ChatSessionSnapshot:
+def create_chat_session(
+    payload: CreateChatSession,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> ChatSessionSnapshot:
     session_id = str(uuid.uuid4())
-    session = chat_service.get_or_create_session(
-        db,
-        session_id=session_id,
-        student_id=payload.student_id,
-        program_id=payload.program_id,
-        lesson_id=payload.lesson_id,
-        tts_enabled=payload.tts_enabled,
-    )
+    try:
+        session = chat_service.get_or_create_session(
+            db,
+            session_id=session_id,
+            student_id=payload.student_id,
+            account_id=account.id,
+            program_id=payload.program_id,
+            lesson_id=payload.lesson_id,
+            tts_enabled=payload.tts_enabled,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     if payload.title:
         session.title = payload.title
         db.commit()
@@ -226,9 +334,15 @@ def create_chat_session(payload: CreateChatSession, db: Session = Depends(get_db
     response_model=ChatTranscript,
     tags=["chat"],
 )
-def fetch_chat_session(session_id: str, db: Session = Depends(get_db)) -> ChatTranscript:
+def fetch_chat_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    account: Account = Depends(get_current_account),
+) -> ChatTranscript:
     session = db.get(ChatSession, session_id)
     if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found")
+    if not session.student or session.student.account_id != account.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found")
     messages = (
         db.query(ChatMessage)
@@ -245,6 +359,7 @@ def fetch_chat_session(session_id: str, db: Session = Depends(get_db)) -> ChatTr
 @app.websocket("/ws/chat/{session_id}")
 async def chat_socket(websocket: WebSocket, session_id: str) -> None:
     student_id = websocket.query_params.get("student_id")
+    account_token = websocket.query_params.get("account_token")
     program_id = websocket.query_params.get("program_id")
     lesson_id = websocket.query_params.get("lesson_id")
     tts_enabled = websocket.query_params.get("tts", "false").lower() == "true"
@@ -252,14 +367,23 @@ async def chat_socket(websocket: WebSocket, session_id: str) -> None:
     if not student_id:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="student_id required")
         return
+    if not account_token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="account_token required")
+        return
 
     await websocket.accept()
     db = SessionLocal()
     try:
+        account = auth_service.get_account_by_token(db, account_token)
+        if not account:
+            await websocket.send_json({"type": "error", "detail": "Authentication required"})
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication required")
+            return
         session = chat_service.get_or_create_session(
             db,
             session_id=session_id,
             student_id=student_id,
+            account_id=account.id,
             program_id=program_id,
             lesson_id=lesson_id,
             tts_enabled=tts_enabled,
@@ -312,6 +436,9 @@ async def chat_socket(websocket: WebSocket, session_id: str) -> None:
                     "message": ChatMessageOut.model_validate(assistant_message).model_dump(mode="json"),
                 }
             )
+    except ValueError as exc:
+        await websocket.send_json({"type": "error", "detail": str(exc)})
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=str(exc))
     except WebSocketDisconnect:
         pass
     finally:

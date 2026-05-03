@@ -24,12 +24,36 @@ def get_or_create_session(
     *,
     session_id: str,
     student_id: str,
+    account_id: str,
     program_id: str | None,
     lesson_id: str | None,
     tts_enabled: bool,
 ) -> ChatSession:
+    student = (
+        db.query(Student)
+        .filter(Student.id == student_id, Student.account_id == account_id)
+        .first()
+    )
+    if not student:
+        raise ValueError("Student not found")
+
+    if program_id:
+        program = (
+            db.query(LearningProgram)
+            .filter(LearningProgram.id == program_id, LearningProgram.student_id == student.id)
+            .first()
+        )
+        if not program:
+            raise ValueError("Program not found")
+    if lesson_id:
+        lesson = db.get(Lesson, lesson_id)
+        if not lesson or not lesson.program or lesson.program.student_id != student.id:
+            raise ValueError("Lesson not found")
+
     session = db.get(ChatSession, session_id)
     if session:
+        if session.student_id != student.id:
+            raise ValueError("Session belongs to another student")
         updated = False
         if program_id and not session.program_id:
             session.program_id = program_id
@@ -47,7 +71,7 @@ def get_or_create_session(
 
     session = ChatSession(
         id=session_id,
-        student_id=student_id,
+        student_id=student.id,
         program_id=program_id,
         lesson_id=lesson_id,
         tts_enabled=tts_enabled,
@@ -239,6 +263,7 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
                 student_id=session.student_id,
                 stars=awarded_stars,
                 summary=assistant_message.text_content,
+                account_id=session.student.account_id,
             )
         except ValueError:
             pass

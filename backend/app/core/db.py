@@ -155,3 +155,11 @@ def ensure_schema() -> None:
             column_type="TEXT",
         )
 
+    student_columns = existing_columns("students")
+    if student_columns is not None:
+        add_column(
+            "students",
+            student_columns,
+            "account_id",
+            column_type="TEXT",
+        )

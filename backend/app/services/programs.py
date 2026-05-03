@@ -362,8 +362,17 @@ def _student_profile(student: Student, topic: TopicCreate | None = None) -> dict
     return profile
 
 
-def create_student(db: Session, payload: StudentCreate) -> Student:
+def _get_student_for_account(db: Session, *, student_id: str, account_id: str) -> Student | None:
+    return (
+        db.query(Student)
+        .filter(Student.id == student_id, Student.account_id == account_id)
+        .first()
+    )
+
+
+def create_student(db: Session, payload: StudentCreate, *, account_id: str) -> Student:
     student = Student(
+        account_id=account_id,
         display_name=payload.display_name,
         age=payload.age,
         grade=payload.grade,
@@ -375,11 +384,19 @@ def create_student(db: Session, payload: StudentCreate) -> Student:
     return student
 
 
-def list_students(db: Session) -> list[Student]:
-    return db.query(Student).order_by(Student.created_at.desc()).all()
+def list_students(db: Session, *, account_id: str) -> list[Student]:
+    return (
+        db.query(Student)
+        .filter(Student.account_id == account_id)
+        .order_by(Student.created_at.desc())
+        .all()
+    )
 
 
-def list_catalog(db: Session, student_id: str) -> list[ProgramCatalogEntry]:
+def list_catalog(db: Session, student_id: str, *, account_id: str) -> list[ProgramCatalogEntry]:
+    student = _get_student_for_account(db, student_id=student_id, account_id=account_id)
+    if not student:
+        raise ValueError("Student not found")
     programs = (
         db.query(LearningProgram)
         .filter(LearningProgram.student_id == student_id)
@@ -389,8 +406,14 @@ def list_catalog(db: Session, student_id: str) -> list[ProgramCatalogEntry]:
     return [ProgramCatalogEntry.model_validate(program) for program in programs]
 
 
-def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) -> LearningProgram:
-    student = db.get(Student, student_id)
+def create_topic_program(
+    db: Session,
+    *,
+    student_id: str,
+    payload: TopicCreate,
+    account_id: str,
+) -> LearningProgram:
+    student = _get_student_for_account(db, student_id=student_id, account_id=account_id)
     if not student:
         raise ValueError("Student not found")
 
@@ -448,8 +471,13 @@ def create_topic_program(db: Session, *, student_id: str, payload: TopicCreate) 
     return program
 
 
-def get_program(db: Session, program_id: str) -> LearningProgram | None:
-    return db.query(LearningProgram).filter(LearningProgram.id == program_id).first()
+def get_program(db: Session, program_id: str, *, account_id: str) -> LearningProgram | None:
+    return (
+        db.query(LearningProgram)
+        .join(Student, Student.id == LearningProgram.student_id)
+        .filter(LearningProgram.id == program_id, Student.account_id == account_id)
+        .first()
+    )
 
 
 def serialize_program(program: LearningProgram) -> LearningProgramResponse:
@@ -492,9 +520,13 @@ def serialize_program(program: LearningProgram) -> LearningProgramResponse:
 
 
 def submit_diagnostic(
-    db: Session, *, program_id: str, submission: DiagnosticSubmission
+    db: Session,
+    *,
+    program_id: str,
+    submission: DiagnosticSubmission,
+    account_id: str,
 ) -> tuple[LearningProgram, QuizAttempt]:
-    program = get_program(db, program_id)
+    program = get_program(db, program_id, account_id=account_id)
     if not program:
         raise ValueError("Program not found")
     if not program.quiz:
@@ -577,17 +609,20 @@ def complete_lesson(
     *,
     lesson_id: str,
     payload: LessonCompletionRequest,
+    account_id: str,
 ) -> LessonAttempt:
     lesson = db.get(Lesson, lesson_id)
     if not lesson:
         raise ValueError("Lesson not found")
-    student = db.get(Student, payload.student_id)
+    student = _get_student_for_account(db, student_id=payload.student_id, account_id=account_id)
     if not student:
         raise ValueError("Student not found")
 
     program = lesson.program
     if not program:
         raise ValueError("Lesson is not attached to a program")
+    if program.student_id != student.id:
+        raise ValueError("Lesson does not belong to student")
 
     lessons_sorted = sorted(program.lessons or [], key=lambda item: item.order_index)
     previous_mastered = True
@@ -660,17 +695,20 @@ def record_chat_mastery(
     student_id: str,
     stars: int,
     summary: str | None = None,
+    account_id: str,
 ) -> LessonAttempt:
     lesson = db.get(Lesson, lesson_id)
     if not lesson:
         raise ValueError("Lesson not found")
-    student = db.get(Student, student_id)
+    student = _get_student_for_account(db, student_id=student_id, account_id=account_id)
     if not student:
         raise ValueError("Student not found")
 
     program = lesson.program
     if not program:
         raise ValueError("Lesson is not attached to a program")
+    if program.student_id != student.id:
+        raise ValueError("Lesson does not belong to student")
 
     lessons_sorted = sorted(program.lessons or [], key=lambda item: item.order_index)
     previous_mastered = True
@@ -710,8 +748,8 @@ def record_chat_mastery(
     return attempt
 
 
-def capture_progress(db: Session, student_id: str) -> ProgressSnapshot:
-    student = db.get(Student, student_id)
+def capture_progress(db: Session, student_id: str, *, account_id: str) -> ProgressSnapshot:
+    student = _get_student_for_account(db, student_id=student_id, account_id=account_id)
     if not student:
         raise ValueError("Student not found")
 
@@ -742,10 +780,13 @@ def capture_progress(db: Session, student_id: str) -> ProgressSnapshot:
     return snapshot
 
 
-def ensure_default_chat_session(db: Session, student_id: str) -> ChatSession:
+def ensure_default_chat_session(db: Session, student_id: str, *, account_id: str) -> ChatSession:
+    student = _get_student_for_account(db, student_id=student_id, account_id=account_id)
+    if not student:
+        raise ValueError("Student not found")
     session = (
         db.query(ChatSession)
-        .filter(ChatSession.student_id == student_id)
+        .filter(ChatSession.student_id == student.id)
         .order_by(ChatSession.created_at.asc())
         .first()
     )

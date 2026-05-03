@@ -17,6 +17,24 @@ class StudentBase(BaseModel):
     preferences: dict[str, Any] = Field(default_factory=dict)
 
 
+class AccountAuthRequest(BaseModel):
+    email: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=6)
+
+
+class AccountResponse(BaseModel):
+    id: str
+    email: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AuthSessionResponse(BaseModel):
+    token: str
+    account: AccountResponse
+
+
 class StudentCreate(StudentBase):
     pass
 
