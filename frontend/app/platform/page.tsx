@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import { MarkdownRenderer } from './components/MarkdownRenderer';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 const DEFAULT_SERVER_API_BASE = 'http://backend:8000';
 
