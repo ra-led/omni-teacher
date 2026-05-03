@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from typing import Any, Iterable
 
@@ -37,6 +38,7 @@ class OmniClient:
         )
         self._model = settings.omni_model
         self._voice = settings.tts_voice
+        self._stt_model = settings.stt_model
 
     def generate_diagnostic_quiz(self, *, topic: str, student_profile: dict[str, Any]) -> dict[str, Any]:
         """Create a kid-friendly diagnostic quiz for the requested topic."""
@@ -79,16 +81,19 @@ class OmniClient:
         system_prompt = (
             "You are Omni Teacher, an adaptive tutor. Evaluate the student's quiz answers, "
             "summarise strengths/gaps, and design a personalised learning program with chapters "
-            "and lessons. Lessons must include markdown-friendly explanations and suggest "
-            "activities for kids."
+            "and lessons. Lessons must include markdown-friendly explanations, learning objectives, "
+            "step-by-step teaching plans, playful practice ideas, mastery checks, and optional resources."
         )
         user_prompt = (
             "Topic: {topic}\nStudent profile: {profile}\n\n"
             "Quiz questions: {quiz}\n\nStudent answers: {answers}\n\n"
             "Respond as JSON with keys: skill_profile (string summary), program_overview (string),"
             " score (0-100), analysis (object with strengths and improvements), chapters (array)."
-            "Each chapter must include title, focus, lessons array. Each lesson needs title,"
-            " content_markdown, and optional resources (array of {type, label, url})."
+            "Each chapter must include title, focus, lessons array. Each lesson needs title," 
+            " content_markdown (markdown string that kids can read), objectives (array of strings)," 
+            " method_plan (array of steps with title, description, duration_minutes), practice_prompts (array of objects with prompt and modality)," 
+            " mastery_check (object with prompt, success_criteria, exemplar_answer, extension_idea, follow_up_questions)," 
+            " estimated_minutes (integer), and optional resources (array of objects with type, label, url)."
         ).format(
             topic=topic,
             profile=json.dumps(student_profile),
@@ -106,6 +111,54 @@ class OmniClient:
         )
         if not payload:
             raise RuntimeError("Omni model did not return evaluation content")
+        return json.loads(payload)
+
+    def evaluate_lesson_mastery(
+        self,
+        *,
+        lesson_title: str,
+        lesson_content: str,
+        objectives: list[Any],
+        method_plan: list[Any],
+        assessment: dict[str, Any],
+        student_answers: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Score a learner's mastery for a lesson and provide celebratory feedback."""
+
+        system_prompt = (
+            "You are Omni Teacher, an encouraging learning coach. Review the student's response to a "
+            "lesson mastery check and award a playful star rating (0-3 stars) with a score from 0-100."
+            " Offer upbeat praise and a gentle suggestion for what to try next."
+        )
+        user_prompt = (
+            "Lesson title: {title}\n"
+            "Lesson content (markdown): {content}\n"
+            "Objectives: {objectives}\n"
+            "Teaching steps: {method_plan}\n"
+            "Mastery check: {assessment}\n"
+            "Student answers: {answers}\n\n"
+            "Return JSON with keys: score (0-100 integer), stars (integer 0-3), summary (string),"
+            " positive_feedback (string), next_focus (string)."
+            " Keep language kid-friendly."
+        ).format(
+            title=lesson_title,
+            content=lesson_content,
+            objectives=json.dumps(objectives),
+            method_plan=json.dumps(method_plan),
+            assessment=json.dumps(assessment),
+            answers=json.dumps(student_answers),
+        )
+
+        payload = self._chat_completion(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.5,
+            response_format={"type": "json_object"},
+        )
+        if not payload:
+            raise RuntimeError("Omni model did not return lesson evaluation content")
         return json.loads(payload)
 
     def summarise_lesson_attempt(
@@ -168,6 +221,50 @@ class OmniClient:
         except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
             raise OmniAPIError("Network error while synthesising speech") from exc
         return response.content
+
+    def transcribe_audio(self, audio_bytes: bytes, *, filename: str = "speech.webm", mime_type: str = "audio/webm") -> str:
+        """Transcribe learner audio into text using the configured STT model.
+
+        Falls back to Whisper if the primary STT model is rejected (e.g. unsupported
+        or not provisioned in the current account).
+        """
+
+        candidate_models: list[str] = [self._stt_model]
+        if "whisper-1" not in candidate_models:
+            candidate_models.append("whisper-1")
+
+        last_error: OmniAPIError | None = None
+
+        for model_name in candidate_models:
+            # Re-wrap bytes for each attempt so the multipart encoder has a fresh stream
+            file_payload = {"file": (filename, io.BytesIO(audio_bytes), mime_type)}
+            try:
+                response = self._http.post(
+                    "/audio/transcriptions",
+                    files=file_payload,
+                    data={"model": model_name},
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                detail = exc.response.text if exc.response else ""
+                status_code = exc.response.status_code if exc.response else None
+                message = f"Unable to transcribe audio with {model_name}"
+                if detail:
+                    message = f"{message}: {detail}"
+                last_error = OmniAPIError(message, status_code=status_code)
+                continue
+            except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+                raise OmniAPIError("Network error while transcribing audio") from exc
+
+            payload = response.json()
+            text = (payload.get("text") or "").strip()
+            if text:
+                return text
+            last_error = OmniAPIError(f"Transcription from {model_name} returned no text", status_code=response.status_code)
+
+        if last_error:
+            raise last_error
+        return ""
 
     def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
         payload: dict[str, Any] = {

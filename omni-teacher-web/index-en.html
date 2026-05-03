@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Teacher – AI Teacher for Every Child</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Omni Teacher is a kid-friendly AI teacher that uses language and vision models to deliver adaptive learning through chat, voice, and images, with transparent progress for parents and schools."
+  />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <!-- Background glow -->
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div
+      class="absolute -top-40 left-1/2 h-80 w-[50rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-sky-300/40 via-teal-300/30 to-indigo-300/30 blur-3xl">
+    </div>
+    <div
+      class="absolute bottom-[-10rem] right-[-10rem] h-96 w-96 rounded-full bg-gradient-to-tr from-rose-300/40 via-purple-300/30 to-sky-300/20 blur-3xl">
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2">
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-teal-400 shadow-md shadow-sky-200">
+          <span class="text-lg font-black tracking-tight text-white">O</span>
+        </div>
+        <div class="leading-tight">
+          <div class="text-sm font-semibold tracking-wide uppercase text-slate-900">
+            Omni Teacher
+          </div>
+          <div class="text-xs text-slate-500">
+            AI-powered kid-friendly teacher
+          </div>
+        </div>
+      </div>
+      <nav class="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
+        <a href="#product" class="hover:text-sky-600 transition">Product</a>
+        <a href="#how-it-works" class="hover:text-sky-600 transition">How it Works</a>
+        <a href="#architecture" class="hover:text-sky-600 transition">Architecture</a>
+        <a href="#safety" class="hover:text-sky-600 transition">Safety</a>
+        <a href="#roadmap" class="hover:text-sky-600 transition">Roadmap</a>
+        <a
+          href="#contact"
+          class="rounded-full border border-sky-500/70 bg-sky-500/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-sky-700 shadow-sm hover:bg-sky-500/10 transition"
+        >
+          Book investor demo
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section
+    class="mx-auto flex max-w-6xl flex-col gap-12 px-4 pb-16 pt-10 sm:px-6 lg:flex-row lg:items-center lg:px-8 lg:pb-24 lg:pt-16">
+    <!-- Hero text -->
+    <div class="flex-1 space-y-6">
+      <div
+        class="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        <span>AI teacher • Multimodal • Investor-ready platform</span>
+      </div>
+
+      <div class="space-y-4">
+        <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
+          An AI teacher that
+          <span
+            class="bg-gradient-to-r from-sky-600 via-teal-600 to-indigo-600 bg-clip-text text-transparent">
+            grows with every child
+          </span>
+        </h1>
+        <p class="max-w-xl text-sm text-slate-600 sm:text-base">
+          Omni Teacher turns large language and vision models into a safe,
+          kid-friendly teacher that listens, sees, and explains through chat,
+          voice, and images — while giving parents and schools transparent,
+          curriculum-aligned progress.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a
+          id="demo"
+          href="#contact"
+          class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-300 hover:bg-sky-500 transition"
+        >
+          Book investor demo
+          <span class="ml-2 text-base">↗</span>
+        </a>
+        <a
+          href="#product"
+          class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs font-medium text-slate-700 hover:border-sky-400 hover:text-sky-700 transition"
+        >
+          View product tour
+        </a>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="grid max-w-xl gap-3 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Personalized programs</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">Minutes, not months</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Modalities</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">Chat • Voice • Images</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Target users</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">K–8 students</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero visual card -->
+    <div class="flex-1">
+      <div
+        class="relative mx-auto mt-4 max-w-md rounded-3xl border border-slate-200 bg-white p-4 shadow-xl shadow-sky-100 sm:mt-0">
+        <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
+          <span>Live lesson · Fractions with Pizza 🍕</span>
+          <span
+            class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 border border-emerald-200">
+            Adaptive mode
+          </span>
+        </div>
+        <div class="space-y-3 rounded-2xl bg-slate-50 p-3">
+          <!-- Teacher bubble -->
+          <div class="flex items-start gap-3">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-teal-400 text-xs font-bold text-white shadow-md">
+              OT
+            </div>
+            <div
+              class="max-w-[75%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-xs text-slate-800 border border-slate-100 shadow-sm">
+              “If you have 1 whole pizza and cut it into 4 equal slices, how many
+              slices is <span class="font-semibold text-sky-600">3/4</span> of the pizza?”
+            </div>
+          </div>
+
+          <!-- Student bubble -->
+          <div class="flex justify-end">
+            <div
+              class="max-w-[75%] rounded-2xl rounded-tr-sm bg-sky-50 px-3 py-2 text-xs text-sky-900 border border-sky-100 shadow-sm">
+              “Three slices! Can I draw it?”
+            </div>
+          </div>
+
+          <!-- Quick chips -->
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Speak answer
+            </button>
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Upload drawing
+            </button>
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Try a harder one
+            </button>
+          </div>
+        </div>
+
+        <!-- Investor metrics -->
+        <div
+          class="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] uppercase tracking-wide text-slate-500">
+              Real-time insights
+            </span>
+            <span
+              class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 border border-emerald-200">
+              Pilot-ready
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Mastery · Fractions</div>
+              <div class="text-xs font-semibold text-slate-900">72%</div>
+            </div>
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Streak</div>
+              <div class="text-xs font-semibold text-slate-900">5 days</div>
+            </div>
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Avg. time / session</div>
+              <div class="text-xs font-semibold text-slate-900">14 min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF STRIP -->
+  <section class="border-y border-slate-200 bg-white/80">
+    <div
+      class="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        <span>Designed for K–8 math, science & literacy</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <span class="uppercase tracking-wide text-[10px] text-slate-400">Backed by</span>
+        <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-600">
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            LLM + VLM (gpt-4o) orchestration
+          </span>
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            FastAPI · Next.js · Postgres · Redis
+          </span>
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            COPPA/GDPR aware from day one
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT SECTION -->
+  <section id="product" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+          AI teacher + progress engine + safety layer
+        </h2>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">
+          Omni Teacher combines multimodal tutoring with structured learning programs, real
+          progress tracking, and strong guardrails so investors aren&apos;t betting on
+          “just another chatbot”.
+        </p>
+      </div>
+      <p class="text-xs text-slate-500">
+        For students · parents · schools — one platform, different views.
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          Quiz & Program Generator
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Adaptive learning programs</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Diagnostic quizzes generate personalized curriculum trees per child, stored as
+          versioned programs with clear objectives and paths.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          LLM/VLM Orchestration
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Multimodal, kid-friendly tutor</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Students talk, type, or upload images of their work. The LLM Orchestrator and
+          VLM worker understand it all and respond with rich, age-appropriate
+          explanations.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          Progress Analytics
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Transparent progress for adults</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Progress dashboards, mastery heatmaps, and downloadable reports let guardians
+          and teachers see real learning, not raw chat logs.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+        How Omni Teacher works
+      </h2>
+      <p class="max-w-md text-xs text-slate-500">
+        From topic selection to reflections, every step is backed by structured data
+        models: programs, lessons, attempts, badges, and chat sessions.
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-4">
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Step 01
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Student picks a topic</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          From a kid-friendly catalog like “Fractions with Pizza” or “Story Writing
+          Adventure”.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Step 02
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Diagnostic quiz</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          QuizGen uses the LLM Orchestrator to build a short, tailored quiz. Students
+          answer by text, voice, or pictures.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Step 03
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Program assembled</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Results feed into a personalized program_version: chapters, lessons, quizzes,
+          and preferred modalities.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Step 04
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">
+          Lesson chat & reflection
+        </h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Lessons run as structured chat sessions. Attempts and reflections update
+          progress, badges, and recommendations.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture" class="border-y border-slate-200 bg-slate-50/80">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+            Architecture built for scale and safety
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm text-slate-600">
+            Investors get more than a demo. Omni Teacher is a containerized, observable
+            platform with clear separation between UI, orchestration, workers, and
+            storage.
+          </p>
+        </div>
+        <p class="text-xs text-slate-500">
+          Next.js · FastAPI · Async workers · Postgres · Redis · MinIO
+        </p>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-[3fr,2fr]">
+        <div class="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Modular, production-ready stack
+          </h3>
+          <ul class="space-y-2 text-xs text-slate-600">
+            <li>
+              <span class="font-semibold text-sky-700">Frontend:</span>
+              Next.js web app with chat & lesson UI, curriculum catalog, and progress
+              dashboards.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Backend:</span>
+              FastAPI REST & WebSocket API with RBAC for students, parents, and admins.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Orchestration:</span>
+              LLM Orchestrator managing prompts, tools, and post-processing for gpt-4o
+              multimodal reasoning.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Workers:</span>
+              Async quiz evaluation, TTS synthesis, and vision analysis running on
+              Redis-backed queues.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Persistence:</span>
+              PostgreSQL for learning data, Redis for cache/queues, and MinIO/S3 for
+              media.
+            </li>
+          </ul>
+
+          <div
+            class="mt-4 rounded-xl border border-sky-300 bg-sky-50 p-3 text-[11px] text-sky-900">
+            <div class="mb-1 flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+              <span class="font-medium">DevOps ready</span>
+            </div>
+            <p class="text-sky-900/90">
+              Dockerized services, docker-compose for local, Prometheus + Grafana + Loki
+              for observability, and GitHub Actions for CI/CD with ephemeral test
+              environments.
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700 shadow-sm">
+          <h3 class="mb-3 text-sm font-semibold text-slate-900">System at a glance</h3>
+          <div
+            class="rounded-xl bg-slate-50 p-3 font-mono text-[10px] leading-relaxed text-slate-700 whitespace-pre-line border border-slate-100">
+Frontend: Next.js Web App
+  └─ Chat & Lesson UI
+  └─ Program Catalog
+  └─ Voice Recorder
+
+Backend: FastAPI API
+  ├─ Auth & RBAC
+  ├─ Progress Tracking
+  ├─ Quiz & Program Generator
+  └─ Media Pipeline
+
+Orchestrator → gpt-4o (LLM/VLM)
+Workers     → Quiz / TTS / Vision
+Storage     → Postgres, Redis, MinIO
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAFETY -->
+  <section id="safety" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+          Safety, compliance & control
+        </h2>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">
+          Omni Teacher is designed for children first: friendly personas, strict
+          guardrails, and reporting that adults can trust.
+        </p>
+      </div>
+      <p class="text-xs text-slate-500">
+        COPPA/GDPR awareness · Content moderation · Human-in-the-loop
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-4">
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Child-safe persona</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          System prompts keep tone age-appropriate, encouraging, and on-topic — nudging
+          students gently back to learning.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Content moderation</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Omni classification and filters review messages before they are shown or stored,
+          with escalation to human review if needed.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Privacy by design</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Parental consent, data minimization, and clear separation of student vs guardian
+          accounts support COPPA/GDPR-aligned flows.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Audit-ready logs</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Structured records of programs, quizzes, attempts, and badges provide a
+          defensible trail for schools and regulators.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP / GTM -->
+  <section id="roadmap" class="border-y border-slate-200 bg-slate-50/80">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="mb-8 grid gap-6 lg:grid-cols-[3fr,2fr]">
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+            From single learner to AI classroom
+          </h2>
+          <p class="mt-2 max-w-xl text-sm text-slate-600">
+            Our roadmap extends Omni Teacher from home usage to full classroom deployment,
+            with richer analytics and collaborative learning.
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-600">
+            <li>• Adaptive pacing from reinforcement learning signals</li>
+            <li>• Collaborative classroom mode with shared sessions</li>
+            <li>• Parent mobile app with push notifications</li>
+            <li>• Offline-first mobile support for low-connectivity regions</li>
+          </ul>
+        </div>
+        <div
+          class="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700 shadow-sm">
+          <h3 class="mb-2 text-sm font-semibold text-slate-900">Go-to-market focus</h3>
+          <div class="space-y-3">
+            <div>
+              <div
+                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Families
+              </div>
+              <p class="mt-1 text-slate-600">
+                Direct-to-consumer subscription: always-on AI teacher for homework help,
+                enrichment, and breaks. Weekly email summaries for guardians.
+              </p>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Schools & districts
+              </div>
+              <p class="mt-1 text-slate-600">
+                Pilots with classroom mode, teacher dashboards, and secure multi-student
+                sessions — aligned with existing LMS and SIS systems via APIs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Final CTA -->
+      <div class="mt-6 flex flex-col items-center gap-4 text-center">
+        <h3 class="text-lg font-semibold text-slate-900 sm:text-xl">
+          We&apos;re building the AI teacher layer for the next decade
+        </h3>
+        <p class="max-w-2xl text-sm text-slate-600">
+          Looking for partners who believe safe, adaptive AI tutors should be available to
+          every child — not just those who can afford 1:1 human tutoring.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="#contact"
+            class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-300 hover:bg-sky-500 transition"
+          >
+            Talk to the team
+          </a>
+          <a
+            href="#"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:border-sky-400 hover:text-sky-700 transition"
+          >
+            Download product one-pager (PDF)
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT + FOOTER -->
+  <section id="contact" class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="grid gap-6 md:grid-cols-[2fr,3fr]">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">
+          Share a bit about your interest
+        </h2>
+        <p class="mt-2 text-sm text-slate-600">
+          We&apos;ll follow up with a product demo, technical deep dive, and roadmap
+          overview tailored to your investment thesis or pilot needs.
+        </p>
+      </div>
+      <form class="grid gap-3 text-sm">
+        <div class="grid gap-2 sm:grid-cols-2">
+          <input
+            placeholder="Name"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+          />
+          <input
+            placeholder="Work email"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+          />
+        </div>
+        <input
+          placeholder="Organization / fund / school"
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+        />
+        <select
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200">
+          <option>Investor</option>
+          <option>School / district</option>
+          <option>Parent / guardian</option>
+          <option>Other</option>
+        </select>
+        <textarea
+          rows="3"
+          placeholder="What would you like to explore together?"
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"></textarea>
+        <button
+          type="submit"
+          class="mt-1 inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-400 transition"
+        >
+          Request intro call
+        </button>
+      </form>
+    </div>
+
+    <footer
+      class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 text-xs text-slate-500 sm:flex-row">
+      <div class="flex items-center gap-2">
+        <span>© <span id="year"></span> Omni Teacher.</span>
+        <span>All rights reserved.</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="#" class="hover:text-slate-700 transition">Privacy</a>
+        <a href="#" class="hover:text-slate-700 transition">Terms</a>
+        <a href="#" class="hover:text-slate-700 transition">Security</a>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    // Set current year in footer
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>ПроТо – ИИ-учитель для каждого ребёнка</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="ПроТо — доброжелательный ИИ-учитель для детей: адаптивные программы, голос, текст и изображения. Понятная аналитика для родителей и школ."
+  />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <!-- Фон -->
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div
+      class="absolute -top-40 left-1/2 h-80 w-[50rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-sky-300/40 via-teal-300/30 to-indigo-300/30 blur-3xl">
+    </div>
+    <div
+      class="absolute bottom-[-10rem] right-[-10rem] h-96 w-96 rounded-full bg-gradient-to-tr from-rose-300/40 via-purple-300/30 to-sky-300/20 blur-3xl">
+    </div>
+  </div>
+
+  <!-- ШАПКА -->
+  <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2">
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-teal-400 shadow-md shadow-sky-200">
+          <span class="text-lg font-black tracking-tight text-white">П</span>
+        </div>
+        <div class="leading-tight">
+          <div class="text-sm font-semibold tracking-wide uppercase text-slate-900">
+            ПроТо
+          </div>
+          <div class="text-xs text-slate-500">
+            ИИ-учитель для детей
+          </div>
+        </div>
+      </div>
+      <nav class="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
+        <a href="#product" class="hover:text-sky-600 transition">Продукт</a>
+        <a href="#how-it-works" class="hover:text-sky-600 transition">Как это работает</a>
+        <a href="#architecture" class="hover:text-sky-600 transition">Архитектура</a>
+        <a href="#safety" class="hover:text-sky-600 transition">Безопасность</a>
+        <a href="#roadmap" class="hover:text-sky-600 transition">Дорожная карта</a>
+        <a
+          href="#contact"
+          class="rounded-full border border-sky-500/70 bg-sky-500/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-sky-700 shadow-sm hover:bg-sky-500/10 transition"
+        >
+          Демо для инвесторов
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section
+    class="mx-auto flex max-w-6xl flex-col gap-12 px-4 pb-16 pt-10 sm:px-6 lg:flex-row lg:items-center lg:px-8 lg:pb-24 lg:pt-16">
+    <!-- Текст -->
+    <div class="flex-1 space-y-6">
+      <div
+        class="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        <span>ИИ-учитель • Мультимодальность • Готово к пилотам</span>
+      </div>
+
+      <div class="space-y-4">
+        <h1 class="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+          ИИ-учитель, который
+          <span
+            class="bg-gradient-to-r from-sky-600 via-teal-600 to-indigo-600 bg-clip-text text-transparent">
+            растёт вместе с ребёнком
+          </span>
+        </h1>
+        <p class="max-w-xl text-sm text-slate-600 sm:text-base">
+          ПроТо превращает современные языковые и визуальные модели в безопасного, дружелюбного ИИ-учителя.
+          Агентный подход позволяет разным ИИ-агентам заниматься диагностикой, объяснениями и мотивацией,
+          а родители и школы получают прозрачную аналитику и понятные отчёты о прогрессе.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a
+          id="demo"
+          href="#contact"
+          class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-300 hover:bg-sky-500 transition"
+        >
+          Записаться на демо
+          <span class="ml-2 text-base">↗</span>
+        </a>
+        <a
+          href="#product"
+          class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs font-medium text-slate-700 hover:border-sky-400 hover:text-sky-700 transition"
+        >
+          Посмотреть продукт
+        </a>
+      </div>
+
+      <!-- Краткие цифры -->
+      <div class="grid max-w-xl gap-3 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Персонализация</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">Минуты, а не месяцы</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Форматы</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">Чат • Голос • Изображения</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <div class="text-[11px] uppercase tracking-wide text-slate-500">Фокус</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">Ученики 1–9 классов</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Визуал -->
+    <div class="flex-1">
+      <div
+        class="relative mx-auto mt-4 max-w-md rounded-3xl border border-slate-200 bg-white p-4 shadow-xl shadow-sky-100 sm:mt-0">
+        <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
+          <span>Урок в чате · Дроби на пицце 🍕</span>
+          <span
+            class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 border border-emerald-200">
+            Адаптивный режим
+          </span>
+        </div>
+        <div class="space-y-3 rounded-2xl bg-slate-50 p-3">
+          <!-- ПроТо -->
+          <div class="flex items-start gap-3">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-teal-400 text-xs font-bold text-white shadow-md">
+              ПТ
+            </div>
+            <div
+              class="max-w-[75%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-xs text-slate-800 border border-slate-100 shadow-sm">
+              «Если у тебя есть 1 целая пицца и ты режешь её на 4 равные части,
+              то сколько кусочков будет составлять
+              <span class="font-semibold text-sky-600">3/4</span> пиццы?»
+            </div>
+          </div>
+
+          <!-- Ребёнок -->
+          <div class="flex justify-end">
+            <div
+              class="max-w-[75%] rounded-2xl rounded-tr-sm bg-sky-50 px-3 py-2 text-xs text-sky-900 border border-sky-100 shadow-sm">
+              «Три кусочка! Можно я нарисую?»
+            </div>
+          </div>
+
+          <!-- Быстрые действия -->
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Ответить голосом
+            </button>
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Загрузить рисунок
+            </button>
+            <button
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700 hover:border-sky-400 hover:text-sky-700 transition">
+              Посложнее задачу
+            </button>
+          </div>
+        </div>
+
+        <!-- Метрики -->
+        <div
+          class="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] uppercase tracking-wide text-slate-500">
+              Аналитика в реальном времени
+            </span>
+            <span
+              class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 border border-emerald-200">
+              Готово к пилоту
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Освоение · Дроби</div>
+              <div class="text-xs font-semibold text-slate-900">72%</div>
+            </div>
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Учебный «стрик»</div>
+              <div class="text-xs font-semibold text-slate-900">5 дней</div>
+            </div>
+            <div class="rounded-xl bg-white p-2 border border-slate-100 shadow-sm">
+              <div class="text-[10px] text-slate-500">Средняя сессия</div>
+              <div class="text-xs font-semibold text-slate-900">14 минут</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ПОЛОСА ДОВЕРИЯ -->
+  <section class="border-y border-slate-200 bg-white/80">
+    <div
+      class="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        <span>Можно создать учебную программу по любой теме — от математики и Древнего Египта до драконов, Minecraft и вселенной Marvel — с любой целью: разобраться в основах, знать всё или просто учиться ради удовольствия.</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <span class="uppercase tracking-wide text-[10px] text-slate-400">Технологии</span>
+        <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-600">
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            Оркестрация проприетарных языковых и визуальных моделей
+          </span>
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            FastAPI · Postgres · Redis · MinIO
+          </span>
+          <span class="rounded-full border border-slate-200 px-3 py-1 bg-slate-50">
+            Защита детских данных и приватности
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ПРОДУКТ -->
+  <section id="product" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+          ПроТо: ИИ-учитель + трекинг прогресса + слой безопасности
+        </h2>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">
+          ПроТо сочетает мультимодальное репетиторство с адаптивными программами,
+          трекингом прогресса и жёсткими ограничениями по безопасности. Агентный подход
+          позволяет выстраивать вокруг ребёнка связку ИИ-агентов — от генератора программ
+          до проверяющего и мотивирующего наставника.
+        </p>
+      </div>
+      <p class="text-xs text-slate-500">
+        Для детей · родителей · школ — одна платформа, разные роли.
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          Генератор программ и тестов
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Адаптивные учебные траектории</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Диагностические тесты автоматически собирают персональный курс под ребёнка:
+          темы, уровни сложности, домашние задания и повторение.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          Агентный LLM/VLM-оркестратор
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Дружелюбный мультимодальный наставник</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Ребёнок может писать, говорить и отправлять фото тетради.
+          Отдельные ИИ-агенты разбирают задачу, подбирают объяснение и следят за тем,
+          чтобы обучение оставалось безопасным и мотивирующим.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+          Аналитика и трекинг прогресса
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Понятные отчёты для взрослых</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Дашборды, тепловые карты навыков и отчёты в PDF-формате показывают реальный
+          прогресс ученика — не переписку, а конкретные результаты.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- МИНИ-БЛОК: ДЛЯ РЕБЁНКА / ДЛЯ ВЗРОСЛОГО -->
+  <section class="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
+    <div class="mb-6 text-center">
+      <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        Для ребёнка — игра и интерес, для взрослого — структура и результат
+      </h2>
+      <p class="mt-2 max-w-2xl mx-auto text-sm text-slate-600">
+        Темы и цели формулирует ребёнок, родитель или учитель: ПроТо подстраивается
+        под запрос, а не наоборот.
+      </p>
+    </div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-sky-600 mb-1">
+          Для ребёнка
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">
+          Учёба вокруг любимых миров
+        </h3>
+        <p class="mt-2 text-xs text-slate-600">
+          «Сделай курс по драконам», «объясни физику на примерах из Minecraft»,
+          «хочу знать всё про вселенную Marvel», «сделай квест по космосу».
+          ПроТо собирает программу вокруг интересов ребёнка и мягко добавляет
+          базу по математике, языку и другим предметам.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 mb-1">
+          Для взрослого
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">
+          Структурные программы под конкретные задачи
+        </h3>
+        <p class="mt-2 text-xs text-slate-600">
+          «Разобраться в дробях с нуля за 10 уроков», «подготовка к контрольной»,
+          «подтянуть русский», «повторить программу по истории за 2 недели».
+          Взрослый задаёт цель, ограничения по времени и частоте занятий — ПроТо
+          строит программу и помогает отслеживать прогресс.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- КАК ЭТО РАБОТАЕТ -->
+  <section id="how-it-works" class="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        Как работает ПроТо
+      </h2>
+      <p class="max-w-md text-xs text-slate-500">
+        От выбора темы до рефлексии — каждый шаг опирается на структурированные данные:
+        программы, уроки, попытки, бейджи и чат-сессии.
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-4">
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Шаг 01
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Выбор темы без ограничений</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Ребёнок или взрослый задаёт любую тему и цель: от «дробей» и «Древнего Египта»
+          до «драконов» или «вселенной Marvel» — и формулирует, чего хочется достичь:
+          понять базу, знать всё или учиться для удовольствия.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Шаг 02
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Диагностический тест</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Сервис генерирует короткий тест под возраст и запрос. Ответы можно давать
+          текстом, голосом или фотографией решения.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Шаг 03
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">Сбор учебной программы</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          По результатам теста создаётся персональная программа: главы, уроки,
+          контрольные и рекомендованные форматы (визуально, практикой и т.д.).
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+      <div
+        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Шаг 04
+        </div>
+        <h3 class="text-sm font-semibold text-slate-900">
+          Уроки в чате и рефлексия
+        </h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Уроки проходят в формате диалога. Все попытки, ошибки и успехи фиксируются
+          и влияют на последующие задания и рекомендации.
+        </p>
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-r-2xl bg-gradient-to-b from-sky-400/60 via-emerald-400/60 to-purple-400/60">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- АРХИТЕКТУРА -->
+  <section id="architecture" class="border-y border-slate-200 bg-slate-50/80">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+            Архитектура, готовая к масштабированию
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm text-slate-600">
+            Инвестор получает не макет, а функционирующую платформу:
+            контейнеры, очереди, агентный LLM-оркестратор, отдельные сервисы
+            и полную наблюдаемость.
+          </p>
+        </div>
+        <p class="text-xs text-slate-500">
+          Next.js · FastAPI · Workers · Postgres · Redis · MinIO
+        </p>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-[3fr,2fr]">
+        <div class="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Модульный продакшн-стек
+          </h3>
+          <ul class="space-y-2 text-xs text-slate-600">
+            <li>
+              <span class="font-semibold text-sky-700">Фронтенд:</span>
+              веб-приложение на Next.js с чат-уроками, каталогом программ и дашбордами прогресса.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Бэкенд:</span>
+              FastAPI (REST + WebSocket), роли ученик/родитель/админ, единая точка входа.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Оркестратор LLM (агентный подход):</span>
+              управление промптами, контекстом, инструментами и пост-обработкой проприетарной
+              мультимодальной модели.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Воркеры:</span>
+              асинхронная проверка заданий, TTS-озвучка и анализ изображений на очередях Redis.
+            </li>
+            <li>
+              <span class="font-semibold text-sky-700">Хранилища:</span>
+              PostgreSQL для учебных данных, Redis для кеша/очередей, MinIO/S3 для медиа.
+            </li>
+          </ul>
+
+          <div
+            class="mt-4 rounded-xl border border-sky-300 bg-sky-50 p-3 text-[11px] text-sky-900">
+            <div class="mb-1 flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+              <span class="font-medium">DevOps-готовность</span>
+            </div>
+            <p class="text-sky-900/90">
+              Docker для всех сервисов, docker-compose для локальной разработки,
+              Prometheus + Grafana + Loki для метрик и логов, GitHub Actions для CI/CD
+              и прогонов в изолированных окружениях.
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700 shadow-sm">
+          <h3 class="mb-3 text-sm font-semibold text-slate-900">Система одним взглядом</h3>
+          <div
+            class="rounded-xl bg-slate-50 p-3 font-mono text-[10px] leading-relaxed text-slate-700 whitespace-pre-line border border-slate-100">
+Фронтенд: Next.js Web App
+  └─ Чат-и уроки
+  └─ Каталог программ
+  └─ Голосовой ввод
+
+Бэкенд: FastAPI API
+  ├─ Auth & RBAC
+  ├─ Трекер прогресса
+  ├─ Генератор программ и тестов
+  └─ Медиа-пайплайн
+
+Оркестратор → проприетарные LLM/VLM (агентный подход)
+Воркеры     → Тесты / TTS / Vision
+Хранилища   → Postgres, Redis, MinIO
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- БЕЗОПАСНОСТЬ -->
+  <section id="safety" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+          Безопасность, этика и контроль
+        </h2>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">
+          ПроТо изначально спроектирован для детей: безопасный тон общения,
+          ограничение контента и полный контроль у взрослых.
+        </p>
+      </div>
+      <p class="text-xs text-slate-500">
+        Модерация контента · Защита данных · Контур для школ и семей
+      </p>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-4">
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Детский персонаж</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Системные подсказки поддерживают доброжелательный, мотивирующий тон
+          и мягко возвращают ученика к учёбе.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Фильтрация контента</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Сообщения проходят классификацию и модерацию, подозрительные сценарии
+          могут направляться на ручную проверку.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Приватность по умолчанию</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Согласие родителей, минимальный сбор данных, разделение профилей ребёнка
+          и законных представителей.
+        </p>
+      </div>
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Отчётность и следы</h3>
+        <p class="mt-2 text-xs text-slate-600">
+          Структурированные записи программ, тестов, попыток и наград формируют
+          базу для отчётности перед школами и регуляторами.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ДОРОЖНАЯ КАРТА -->
+  <section id="roadmap" class="border-y border-slate-200 bg-slate-50/80">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="mb-8 grid gap-6 lg:grid-cols-[3fr,2fr]">
+        <div>
+          <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+            Персональное обучение, которое взрослеет вместе с ребёнком
+          </h2>
+          <p class="mt-2 max-w-xl text-sm text-slate-600">
+            Дорожная карта ПроТо — это эволюция индивидуального наставника:
+            от первых адаптивных программ к умной экосистеме личного обучения.
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-600">
+            <li>• Улучшение адаптивности при создании и корректировке программ</li>
+            <li>• Мобильное приложение для детей и родителей</li>
+            <li>• Каталог готовых программ и сценариев обучения</li>
+            <li>• Продукты для новых возрастных категорий (дошкольники, старшая школа и далее)</li>
+            <li>• Разработка и обучение собственных языковых и визуальных моделей (LLM/VLM) под задачи образования</li>
+            <li>• Геймификация: уровни, достижения, награды и сюжетные линии, поддерживающие внутреннюю мотивацию ребёнка</li>
+          </ul>
+        </div>
+        <div
+          class="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700 shadow-sm">
+          <h3 class="mb-2 text-sm font-semibold text-slate-900">Go-to-market в России</h3>
+          <div class="space-y-3">
+            <div>
+              <div
+                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Семьи
+              </div>
+              <p class="mt-1 text-slate-600">
+                Подписка B2C: помощник по домашним заданиям, подготовка к контрольным,
+                развитие интереса к предметам. Еженедельные отчёты родителям.
+              </p>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Школы и сети
+              </div>
+              <p class="mt-1 text-slate-600">
+                Пилоты с личными кабинетами учителей и администраций, интеграция
+                с электронными дневниками и журналами, отдельные политики по данным
+                и сценариям использования ИИ-наставника в контуре школы.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Финальный CTA -->
+      <div class="mt-6 flex flex-col items-center gap-4 text-center">
+        <h3 class="text-lg font-semibold text-slate-900 sm:text-xl">
+          Мы строим слой ИИ-учителя для следующего десятилетия
+        </h3>
+        <p class="max-w-2xl text-sm text-slate-600">
+          Ищем партнёров и инвесторов, которые верят, что качественный ИИ-наставник
+          должен быть доступен каждому ребёнку, а не только тем, кто может позволить
+          себе личного репетитора.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="#contact"
+            class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-300 hover:bg-sky-500 transition"
+          >
+            Обсудить партнёрство
+          </a>
+          <a
+            href="#"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:border-sky-400 hover:text-sky-700 transition"
+          >
+            Скачать краткую презентацию (PDF)
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- КОНТАКТЫ + ФУТЕР -->
+  <section id="contact" class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="grid gap-6 md:grid-cols-[2fr,3fr]">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">
+          Напишите, чем вам интересен ПроТо
+        </h2>
+        <p class="mt-2 text-sm text-slate-600">
+          Мы подготовим демо-сессию, технический разбор и покажем дорожную карту
+          с фокусом на ваши задачи — фонд, школа, EdTech-партнёр.
+        </p>
+      </div>
+      <form class="grid gap-3 text-sm">
+        <div class="grid gap-2 sm:grid-cols-2">
+          <input
+            placeholder="Имя"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+          />
+          <input
+            placeholder="Рабочий e-mail"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+          />
+        </div>
+        <input
+          placeholder="Организация / фонд / школа"
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+        />
+        <select
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200">
+          <option>Инвестор</option>
+          <option>Школа / сеть школ</option>
+          <option>Родитель / семья</option>
+          <option>EdTech-компания</option>
+          <option>Другое</option>
+        </select>
+        <textarea
+          rows="3"
+          placeholder="Кратко опишите ваш запрос или гипотезу пилота"
+          class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"></textarea>
+        <button
+          type="submit"
+          class="mt-1 inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-400 transition"
+        >
+          Отправить запрос на созвон
+        </button>
+      </form>
+    </div>
+
+    <footer
+      class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 text-xs text-slate-500 sm:flex-row">
+      <div class="flex items-center gap-2">
+        <span>© <span id="year"></span> ПроТо.</span>
+        <span>Все права защищены.</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="#" class="hover:text-slate-700 transition">Политика конфиденциальности</a>
+        <a href="#" class="hover:text-slate-700 transition">Пользовательское соглашение</a>
+        <a href="#" class="hover:text-slate-700 transition">Безопасность</a>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
+

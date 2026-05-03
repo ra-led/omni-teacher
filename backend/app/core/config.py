@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
     minio_endpoint: str
+    minio_public_endpoint: str | None = None
     minio_access_key: str
     minio_secret_key: str
     omni_model: str = "gpt-4o"
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
     openai_api_base: str = "https://api.openai.com/v1"
     tts_voice: str = "alloy"
     tts_bucket_name: str = "omni-teacher-tts"
+    stt_model: str = "gpt-4o-transcribe"
     max_chat_history: int = 12
     environment: Literal["development", "production", "test"] = "development"
     cors_origins: list[str] | str | None = Field(default=None)
@@ -62,6 +65,16 @@ class Settings(BaseSettings):
         if isinstance(origins, list) and origins:
             return list(origins)
         return list(DEFAULT_CORS_ORIGINS)
+
+    @property
+    def public_minio_endpoint(self) -> str:
+        """Return the base URL for client-facing MinIO object links."""
+
+        base = self.minio_public_endpoint or self.minio_endpoint
+        parsed = urlparse(base)
+        if not parsed.scheme:
+            raise ValueError("MINIO_PUBLIC_ENDPOINT/MINIO_ENDPOINT must include scheme, e.g. http://localhost:9000")
+        return base.rstrip("/")
 
 
 @lru_cache

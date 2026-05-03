@@ -42,15 +42,29 @@ class ProgramStatus(str, enum.Enum):
     READY = "ready"
 
 
+class Account(TimestampMixin, Base):
+    __tablename__ = "accounts"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, nullable=False, unique=True)
+    password_salt = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    session_token = Column(String, nullable=True, unique=True)
+
+    students = relationship("Student", back_populates="account", cascade="all, delete-orphan")
+
+
 class Student(TimestampMixin, Base):
     __tablename__ = "students"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id = Column(String, ForeignKey("accounts.id"), nullable=True, index=True)
     display_name = Column(String, nullable=False)
     age = Column(Integer, nullable=True)
     grade = Column(String, nullable=True)
     preferences = Column(JSON, default=dict)
 
+    account = relationship("Account", back_populates="students")
     programs = relationship("LearningProgram", back_populates="student", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="student", cascade="all, delete-orphan")
     lesson_attempts = relationship("LessonAttempt", back_populates="student", cascade="all, delete-orphan")
@@ -114,6 +128,12 @@ class Lesson(TimestampMixin, Base):
     title = Column(String, nullable=False)
     content_markdown = Column(Text, nullable=False)
     resources = Column(JSON, default=list)
+    objectives = Column(JSON, default=list)
+    method_plan = Column(JSON, default=list)
+    practice_prompts = Column(JSON, default=list)
+    assessment = Column(JSON, default=dict)
+    estimated_minutes = Column(Integer, nullable=True)
+    allow_submission = Column(Boolean, default=False, nullable=False)
 
     program = relationship("LearningProgram", back_populates="lessons")
     attempts = relationship("LessonAttempt", back_populates="lesson", cascade="all, delete-orphan")
@@ -130,6 +150,9 @@ class LessonAttempt(TimestampMixin, Base):
     reflection_positive = Column(Text, nullable=True)
     reflection_negative = Column(Text, nullable=True)
     teacher_notes = Column(Text, nullable=True)
+    score = Column(Integer, nullable=True)
+    stars = Column(Integer, nullable=True)
+    mastery_summary = Column(Text, nullable=True)
 
     lesson = relationship("Lesson", back_populates="attempts")
     student = relationship("Student", back_populates="lesson_attempts")
@@ -141,12 +164,14 @@ class ChatSession(TimestampMixin, Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     student_id = Column(String, ForeignKey("students.id"), nullable=False)
     program_id = Column(String, ForeignKey("learning_programs.id"), nullable=True)
+    lesson_id = Column(String, ForeignKey("lessons.id"), nullable=True)
     title = Column(String, nullable=False, default="Study chat")
     tts_enabled = Column(Boolean, default=False, nullable=False)
     persona_state = Column(JSON, default=dict)
 
     student = relationship("Student", back_populates="chat_sessions")
     program = relationship("LearningProgram")
+    lesson = relationship("Lesson")
     messages = relationship(
         "ChatMessage",
         back_populates="session",

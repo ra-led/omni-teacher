@@ -10,7 +10,7 @@ from .core.config import settings
 from .core.db import session_scope
 from .core.openai_client import get_omni_client
 from .core.storage import storage_client
-from .models import ChatMessage
+from .models import ChatMessage, LearningProgram
 from .schemas import DiagnosticSubmission
 from .services import programs as programs_service
 
@@ -27,9 +27,15 @@ def evaluate_diagnostic(program_id: str, answers: dict[str, Any]) -> dict[str, A
 
     with session_scope() as session:
         submission = DiagnosticSubmission(answers=answers)
+        program = session.get(LearningProgram, program_id)
+        if not program or not program.student or not program.student.account_id:
+            return {"status": "error", "detail": "Program not found"}
         try:
             program, attempt = programs_service.submit_diagnostic(
-                session, program_id=program_id, submission=submission
+                session,
+                program_id=program_id,
+                submission=submission,
+                account_id=program.student.account_id,
             )
         except ValueError as exc:
             return {"status": "error", "detail": str(exc)}

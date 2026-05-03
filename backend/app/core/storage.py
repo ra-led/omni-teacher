@@ -5,6 +5,8 @@ from __future__ import annotations
 import io
 from urllib.parse import urlparse
 
+import json
+
 from minio import Minio
 from minio.error import S3Error
 
@@ -25,13 +27,29 @@ class StorageClient:
             secure=parsed.scheme == "https",
         )
         self._bucket = settings.tts_bucket_name
+        self._public_base = settings.public_minio_endpoint
 
     def ensure_bucket(self) -> None:
-        """Create the audio bucket if it does not already exist."""
+        """Create the audio bucket and make objects world-readable."""
 
         try:
-            if not self._client.bucket_exists(self._bucket):
+            bucket_exists = self._client.bucket_exists(self._bucket)
+            if not bucket_exists:
                 self._client.make_bucket(self._bucket)
+
+            # Ensure the bucket exposes read-only access for generated audio.
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": [f"arn:aws:s3:::{self._bucket}/*"],
+                    }
+                ],
+            }
+            self._client.set_bucket_policy(self._bucket, json.dumps(policy))
         except S3Error as exc:  # pragma: no cover - defensive logging
             raise RuntimeError(f"Unable to ensure MinIO bucket: {exc}") from exc
 
@@ -48,7 +66,7 @@ class StorageClient:
             length=len(audio_bytes),
             content_type=content_type,
         )
-        return f"{settings.minio_endpoint.rstrip('/')}/{self._bucket}/{object_name}"
+        return f"{self._public_base}/{self._bucket}/{object_name}"
 
 
 storage_client = StorageClient()
