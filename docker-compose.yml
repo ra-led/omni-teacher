@@ -10,9 +10,6 @@ services:
       NEXT_PUBLIC_API_BASE_URL: /api
       NEXT_PUBLIC_WS_BASE_URL: wss://chat-proto.ru
       NEXT_PUBLIC_INVESTOR_DECK_URL: /investors-static
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - backend
       - investors-web
@@ -33,8 +30,6 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com/v1}
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
-    volumes:
-      - ./backend:/app
     depends_on:
       - postgres
       - redis
@@ -56,8 +51,6 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com/v1}
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
-    volumes:
-      - ./backend:/app
     depends_on:
       - backend
       - redis
@@ -93,9 +86,6 @@ services:
     command: "npm run dev"
     environment:
       VITE_API_BASE_URL: http://localhost:8000
-    volumes:
-      - ./studio:/app
-      - /app/node_modules
     depends_on:
       - backend
 
