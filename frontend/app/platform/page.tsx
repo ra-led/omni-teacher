@@ -6,6 +6,29 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 const DEFAULT_SERVER_API_BASE = 'http://backend:8000';
 
+const isAbsoluteUrl = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+
+const normalizeHttpBase = (rawBase: string, origin: string) => {
+  if (isAbsoluteUrl(rawBase)) {
+    return rawBase;
+  }
+  return new URL(rawBase.startsWith('/') ? rawBase : `/${rawBase}`, origin).toString();
+};
+
+const normalizeWebsocketBase = (rawBase: string, origin: string) => {
+  if (/^wss?:\/\//i.test(rawBase)) {
+    return rawBase;
+  }
+  if (/^https?:\/\//i.test(rawBase)) {
+    const converted = new URL(rawBase);
+    converted.protocol = converted.protocol === 'https:' ? 'wss:' : 'ws:';
+    return converted.toString();
+  }
+  const originUrl = new URL(origin);
+  originUrl.protocol = originUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  return new URL(rawBase.startsWith('/') ? rawBase : `/${rawBase}`, originUrl.toString()).toString();
+};
+
 const resolveApiBase = () => {
   if (typeof window === 'undefined') {
     return (
@@ -15,7 +38,7 @@ const resolveApiBase = () => {
     );
   }
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+    return normalizeHttpBase(process.env.NEXT_PUBLIC_API_BASE_URL, window.location.origin);
   }
   const { protocol, hostname } = window.location;
   const port = process.env.NEXT_PUBLIC_API_PORT ?? '8000';
@@ -31,7 +54,7 @@ const resolveWebsocketBase = () => {
     );
   }
   if (process.env.NEXT_PUBLIC_WS_BASE_URL) {
-    return process.env.NEXT_PUBLIC_WS_BASE_URL;
+    return normalizeWebsocketBase(process.env.NEXT_PUBLIC_WS_BASE_URL, window.location.origin);
   }
   const { protocol, hostname } = window.location;
   const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
@@ -486,7 +509,7 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append('file', blob, 'lesson-voice.webm');
-      const response = await fetch(`${API_BASE}/api/transcribe`, {
+      const response = await fetch(new URL('/api/transcribe', API_BASE).toString(), {
         method: 'POST',
         body: formData,
       });
@@ -830,7 +853,7 @@ export default function HomePage() {
       return;
     }
 
-    const url = new URL(`${WS_BASE}/ws/chat/${lessonChatSession.id}`);
+    const url = new URL(`/ws/chat/${lessonChatSession.id}`, WS_BASE);
     url.searchParams.set('account_token', authToken);
     url.searchParams.set('student_id', student.id);
     if (selectedProgram) {
