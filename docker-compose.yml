@@ -8,7 +8,7 @@ services:
     command: "npm run dev"
     environment:
       NEXT_PUBLIC_API_BASE_URL: /api
-      NEXT_PUBLIC_WS_BASE_URL: wss://chat-proto.ru/ws
+      NEXT_PUBLIC_WS_BASE_URL: wss://chat-proto.ru
       NEXT_PUBLIC_INVESTOR_DECK_URL: /investors-static
     volumes:
       - ./frontend:/app
