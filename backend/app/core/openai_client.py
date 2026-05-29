@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import io
 import json
+from base64 import b64encode
+from pathlib import Path
 from typing import Any, Iterable
 
 import httpx
@@ -27,7 +28,7 @@ class OmniClient:
             msg = "OPENAI_API_KEY is required to use Omni integrations"
             raise RuntimeError(msg)
 
-        base_url = settings.openai_api_base.rstrip("/")
+        base_url = settings.resolved_openai_api_base
         self._http = httpx.Client(
             base_url=base_url,
             headers={
@@ -36,9 +37,17 @@ class OmniClient:
             },
             timeout=httpx.Timeout(120.0, connect=30.0),
         )
+        self._stt_http = httpx.Client(
+            base_url=settings.resolved_stt_api_base,
+            headers={
+                "Authorization": f"Bearer {settings.openai_api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=httpx.Timeout(120.0, connect=30.0),
+        )
         self._model = settings.omni_model
         self._voice = settings.tts_voice
-        self._stt_model = settings.stt_model
+        self._stt_model = settings.resolved_stt_model
 
     def generate_diagnostic_quiz(self, *, topic: str, student_profile: dict[str, Any]) -> dict[str, Any]:
         """Create a kid-friendly diagnostic quiz for the requested topic."""
@@ -223,48 +232,88 @@ class OmniClient:
         return response.content
 
     def transcribe_audio(self, audio_bytes: bytes, *, filename: str = "speech.webm", mime_type: str = "audio/webm") -> str:
-        """Transcribe learner audio into text using the configured STT model.
+        """Transcribe learner audio through an OpenRouter multimodal chat model."""
 
-        Falls back to Whisper if the primary STT model is rejected (e.g. unsupported
-        or not provisioned in the current account).
-        """
+        audio_mime = self._resolve_audio_mime(audio_bytes, filename=filename, fallback_mime_type=mime_type)
+        encoded_audio = b64encode(audio_bytes).decode("ascii")
+        payload = {
+            "model": self._stt_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Transcribe this voice message. Return only the recognized text.",
+                        },
+                        {
+                            "type": "audio",
+                            "mime_type": audio_mime,
+                            "base64": encoded_audio,
+                        },
+                    ],
+                }
+            ],
+            "temperature": 0,
+        }
+        try:
+            response = self._stt_http.post("/chat/completions", json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code if exc.response else None
+            detail = exc.response.text if exc.response else ""
+            message = f"Unable to transcribe audio with {self._stt_model}"
+            if detail:
+                message = f"{message}: {detail}"
+            raise OmniAPIError(message, status_code=status_code) from exc
+        except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
+            raise OmniAPIError("Network error while transcribing audio") from exc
 
-        candidate_models: list[str] = [self._stt_model]
-        if "whisper-1" not in candidate_models:
-            candidate_models.append("whisper-1")
+        data = response.json()
+        choices = data.get("choices") or []
+        if not choices:
+            return ""
+        message = choices[0].get("message", {})
+        return (message.get("content") or "").strip()
 
-        last_error: OmniAPIError | None = None
+    def _resolve_audio_mime(self, audio_bytes: bytes, *, filename: str, fallback_mime_type: str) -> str:
+        audio_format = self._detect_audio_format(audio_bytes, filename)
+        if audio_format:
+            return {
+                "wav": "audio/wav",
+                "mp3": "audio/mpeg",
+                "flac": "audio/flac",
+                "m4a": "audio/mp4",
+                "ogg": "audio/ogg",
+                "webm": "audio/webm",
+            }[audio_format]
+        if fallback_mime_type:
+            return fallback_mime_type
+        raise OmniAPIError("Unsupported audio format. Use mp3, flac, m4a, wav, ogg, or webm.")
 
-        for model_name in candidate_models:
-            # Re-wrap bytes for each attempt so the multipart encoder has a fresh stream
-            file_payload = {"file": (filename, io.BytesIO(audio_bytes), mime_type)}
-            try:
-                response = self._http.post(
-                    "/audio/transcriptions",
-                    files=file_payload,
-                    data={"model": model_name},
-                )
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                detail = exc.response.text if exc.response else ""
-                status_code = exc.response.status_code if exc.response else None
-                message = f"Unable to transcribe audio with {model_name}"
-                if detail:
-                    message = f"{message}: {detail}"
-                last_error = OmniAPIError(message, status_code=status_code)
-                continue
-            except httpx.HTTPError as exc:  # pragma: no cover - defensive network error
-                raise OmniAPIError("Network error while transcribing audio") from exc
+    def _detect_audio_format(self, audio_bytes: bytes, filename: str) -> str | None:
+        header = bytes(audio_bytes[:32])
+        if header.startswith(b"RIFF") and header[8:12] == b"WAVE":
+            return "wav"
+        if header.startswith(b"fLaC"):
+            return "flac"
+        if header.startswith(b"OggS"):
+            return "ogg"
+        if header.startswith(b"ID3") or (len(header) > 1 and header[0] == 0xFF and (header[1] & 0xE0) == 0xE0):
+            return "mp3"
+        if b"ftyp" in header:
+            return "m4a"
+        if header.startswith(b"\x1A\x45\xDF\xA3"):
+            return "webm"
 
-            payload = response.json()
-            text = (payload.get("text") or "").strip()
-            if text:
-                return text
-            last_error = OmniAPIError(f"Transcription from {model_name} returned no text", status_code=response.status_code)
-
-        if last_error:
-            raise last_error
-        return ""
+        extension = Path(filename).suffix.lower().lstrip(".")
+        if extension in {"mp3", "wav", "flac", "m4a", "ogg", "webm"}:
+            return extension
+        if extension in {"mpeg", "mpga"}:
+            return "mp3"
+        if extension == "mp4":
+            return "m4a"
+        return None
 
     def _chat_completion(self, *, messages: Iterable[dict[str, Any]], temperature: float, response_format: dict | None = None) -> str:
         payload: dict[str, Any] = {
@@ -299,6 +348,7 @@ class OmniClient:
         """Close the underlying HTTP client."""
 
         self._http.close()
+        self._stt_http.close()
 
 
 _singleton: OmniClient | None = None

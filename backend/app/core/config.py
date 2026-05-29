@@ -28,9 +28,11 @@ class Settings(BaseSettings):
     omni_model: str = "gpt-4o"
     openai_api_key: str
     openai_api_base: str = "https://api.openai.com/v1"
+    openai_base_url: str | None = None
     tts_voice: str = "alloy"
     tts_bucket_name: str = "omni-teacher-tts"
     stt_model: str = "gpt-4o-transcribe"
+    openai_transcribe_model: str | None = None
     max_chat_history: int = 12
     environment: Literal["development", "production", "test"] = "development"
     cors_origins: list[str] | str | None = Field(default=None)
@@ -76,6 +78,24 @@ class Settings(BaseSettings):
             raise ValueError("MINIO_PUBLIC_ENDPOINT/MINIO_ENDPOINT must include scheme, e.g. http://localhost:9000")
         return base.rstrip("/")
 
+    @property
+    def resolved_openai_api_base(self) -> str:
+        """Return the OpenAI-compatible endpoint."""
+
+        return self.openai_api_base.rstrip("/")
+
+    @property
+    def resolved_stt_api_base(self) -> str:
+        """Return the speech-recognition endpoint, accepting OpenRouter-style env names."""
+
+        return (self.openai_base_url or self.openai_api_base).rstrip("/")
+
+    @property
+    def resolved_stt_model(self) -> str:
+        """Return the transcription model, accepting OpenRouter-style env names."""
+
+        return self.openai_transcribe_model or self.stt_model
+
 
 @lru_cache
 def get_settings() -> Settings:
@@ -85,4 +105,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-
