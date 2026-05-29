@@ -26,10 +26,9 @@ const tldrCards = [
 ];
 
 const proofItems = [
-  'Создано с педагогами',
-  'Без рекламы',
-  'Прогресс виден родителям',
-  'Пробный урок до подписки',
+  'Пробный старт без оплаты',
+  'Родитель видит, что уже освоено',
+  'Занятия без рекламы и лишних отвлечений',
 ];
 
 const productFlow = [
@@ -154,12 +153,9 @@ export default function LandingPage() {
               ведёт урок в чате или голосом и показывает родителям понятный прогресс.
             </p>
             <div className="landing-hero-actions">
-              <Link href="/platform?mode=registration" className="landing-btn landing-btn--primary landing-btn--large">
-                Получить план обучения
-              </Link>
-              <Link href="/platform" className="landing-link-cta">
-                Посмотреть демо
-              </Link>
+              <a href="#pricing" className="landing-btn landing-btn--primary landing-btn--large">
+                Попробовать
+              </a>
             </div>
             <div className="proof-strip proof-strip-2026">
               {proofItems.map((item) => (
@@ -263,7 +259,7 @@ export default function LandingPage() {
 
         <section className="landing-section segment-section-2026" id="segments">
           <div className="landing-section-heading">
-            <h2>Три возрастных режима без гендерных шаблонов</h2>
+            <h2>Три возрастных режима под разные учебные задачи</h2>
             <p>
               Визуальный язык остаётся доверительным и современным, а тон меняется:
               от мягкой поддержки до спокойного экзаменационного фокуса.
@@ -370,12 +366,17 @@ export default function LandingPage() {
       </main>
 
       <footer className="landing-footer">
-        <Link href="/">Omni Teacher</Link>
-        <span>Конфиденциальность</span>
-        <span>Условия</span>
-        <span>Доступность</span>
-        <span>Поддержка</span>
-        <span>Материалы для родителей</span>
+        <div className="landing-footer-links">
+          <Link href="/">Omni Teacher</Link>
+          <span>Конфиденциальность</span>
+          <span>Условия</span>
+          <span>Доступность</span>
+          <span>Поддержка</span>
+          <span>Материалы для родителей</span>
+        </div>
+        <p className="landing-footer-requisites">
+          ИП Токмаков Юрий Константинович · ОГРНИП 322265100121349 · ИНН 263408820400
+        </p>
       </footer>
     </div>
   );
