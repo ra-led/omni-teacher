@@ -289,19 +289,34 @@ function normalizeChatMessages(messages: ChatMessageOut[]): ChatMessageOut[] {
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 
-  return sorted.filter((message, index, arr) => {
-    if (index === 0 || message.sender !== 'student') {
-      return true;
+  const deduped: ChatMessageOut[] = [];
+  for (const message of sorted) {
+    if (message.sender !== 'student') {
+      deduped.push(message);
+      continue;
     }
-    const prev = arr[index - 1];
-    const sameContent =
-      prev.sender === 'student' &&
-      (prev.text ?? '') === (message.text ?? '') &&
-      (prev.image_url ?? '') === (message.image_url ?? '');
-    const closeInTime =
-      Math.abs(new Date(prev.created_at).getTime() - new Date(message.created_at).getTime()) < 10_000;
-    return !(sameContent && closeInTime);
-  });
+
+    const duplicateIndex = deduped.findIndex((candidate) => {
+      const sameContent =
+        candidate.sender === 'student' &&
+        (candidate.text ?? '') === (message.text ?? '') &&
+        (candidate.image_url ?? '') === (message.image_url ?? '');
+      const closeInTime =
+        Math.abs(new Date(candidate.created_at).getTime() - new Date(message.created_at).getTime()) < 10_000;
+      return sameContent && closeInTime;
+    });
+
+    if (duplicateIndex === -1) {
+      deduped.push(message);
+      continue;
+    }
+
+    if (deduped[duplicateIndex].id.startsWith('optimistic-') && !message.id.startsWith('optimistic-')) {
+      deduped[duplicateIndex] = message;
+    }
+  }
+
+  return deduped;
 }
 
 function formatDiagnosticNotes(notes: unknown): string | null {
@@ -897,7 +912,7 @@ export default function HomePage() {
                       message.sender === 'student' &&
                       message.id.startsWith('optimistic-') &&
                       message.text === data.message.text &&
-                      message.image_url === data.message.image_url
+                      (message.image_url ?? '') === (data.message.image_url ?? '')
                     ),
                 )
               : prev;

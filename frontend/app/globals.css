@@ -3826,6 +3826,31 @@ body {
   background: linear-gradient(135deg, var(--ot-2026-blue), var(--ot-2026-indigo));
 }
 
+.chat-message.student,
+.chat-message.student header,
+.chat-message.student strong,
+.chat-message.student small,
+.chat-message.student .markdown-body,
+.chat-message.student .markdown-body p,
+.chat-message.student .markdown-body li,
+.chat-message.student .markdown-body h1,
+.chat-message.student .markdown-body h2,
+.chat-message.student .markdown-body h3,
+.chat-message.student .markdown-body h4,
+.chat-message.student .markdown-body h5,
+.chat-message.student .markdown-body h6 {
+  color: #ffffff;
+}
+
+.chat-message.student .markdown-body code {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.chat-message.student .markdown-body a {
+  color: #e0f2fe;
+}
+
 .chat-input textarea,
 .chat-input input,
 .form-grid input,
