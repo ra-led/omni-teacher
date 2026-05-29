@@ -196,6 +196,44 @@ def _build_conversation(session: ChatSession, history: Iterable[ChatMessage]) ->
     return messages
 
 
+def _is_lesson_intro_request(message: ChatMessage | None) -> bool:
+    text = (message.text_content or "").strip().lower() if message else ""
+    return text.startswith("please start the lesson about")
+
+
+def _local_lesson_intro(session: ChatSession) -> str | None:
+    lesson = session.lesson
+    if not lesson:
+        return None
+
+    parts = [f"Great, let's start **{lesson.title}**."]
+    objectives = [str(item).strip() for item in (lesson.objectives or []) if str(item).strip()]
+    if objectives:
+        parts.append("Today we will focus on:\n" + "\n".join(f"- {item}" for item in objectives[:3]))
+
+    if lesson.content_markdown:
+        first_block = lesson.content_markdown.strip().split("\n\n", 1)[0].strip()
+        if first_block:
+            parts.append(first_block[:700])
+
+    practice_prompts = lesson.practice_prompts or []
+    first_prompt = None
+    for item in practice_prompts:
+        if isinstance(item, dict):
+            first_prompt = str(item.get("prompt") or "").strip()
+        else:
+            first_prompt = str(item).strip()
+        if first_prompt:
+            break
+
+    if first_prompt:
+        parts.append(f"First quick check: {first_prompt}")
+    else:
+        parts.append("First quick check: tell me what you already know about this topic.")
+
+    return "\n\n".join(parts)
+
+
 def append_message(
     db: Session,
     *,
@@ -226,15 +264,22 @@ def generate_reply(db: Session, session: ChatSession, voice_requested: bool) -> 
     )
     trimmed_history = history[-settings.max_chat_history :]
     conversation = _build_conversation(session, trimmed_history)
-    client = get_omni_client()
     awarded_stars: int | None = None
-    try:
-        reply_text = client.chat_reply(conversation)
-    except OmniAPIError:
-        reply_text = (
-            "I'm having a little trouble reaching my brainy assistant right now. "
-            "Let's keep talking, and I'll fetch more help soon!"
-        )
+    assistant_exists = any(message.sender == "assistant" for message in history)
+    reply_text = ""
+
+    if session.lesson_id and not assistant_exists and _is_lesson_intro_request(history[-1] if history else None):
+        reply_text = _local_lesson_intro(session) or ""
+
+    if not reply_text:
+        client = get_omni_client()
+        try:
+            reply_text = client.chat_reply(conversation)
+        except OmniAPIError:
+            reply_text = (
+                "I'm having a little trouble reaching my brainy assistant right now. "
+                "Let's keep talking, and I'll fetch more help soon!"
+            )
 
     if session.lesson_id and reply_text:
         if match := _STAR_TOKEN.search(reply_text):
