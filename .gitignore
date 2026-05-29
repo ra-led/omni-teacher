@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .env
 .env.*
+example.env
 *.sqlite3
 node_modules/
 frontend/.next/
